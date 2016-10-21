@@ -1,0 +1,56 @@
+{
+    "1": {
+        "id": 1,
+        "class": "Sequence",
+        "name": "",
+        "asset-pack": "core",
+        "children": [
+            "563cd536-ec89-4a10-85f5-aa061a31f31a",
+            4,
+            6
+        ],
+        "decorators": [],
+        "options": {}
+    },
+    "4": {
+        "id": 4,
+        "class": "PlayAnimation",
+        "name": "Play a greeting",
+        "asset-pack": "core",
+        "parent": 1,
+        "options": {
+            "animPath": "greeting.keys",
+            "config": [
+                "(animation) => {",
+                "}"
+            ]
+        }
+    },
+    "6": {
+        "id": 6,
+        "class": "PlayAudio",
+        "name": "Bawhoop",
+        "asset-pack": "core",
+        "parent": 1,
+        "options": {
+            "audioPath": "FX_Bawhoop.mp3"
+        }
+    },
+    "meta": {
+        "version": 1
+    },
+    "563cd536-ec89-4a10-85f5-aa061a31f31a": {
+        "id": "563cd536-ec89-4a10-85f5-aa061a31f31a",
+        "class": "TextToSpeech",
+        "name": "",
+        "options": {
+            "words": "Hi Eric!",
+            "onWord": [
+                "(word) => {",
+                "}"
+            ]
+        },
+        "asset-pack": "core",
+        "parent": 1
+    }
+}
