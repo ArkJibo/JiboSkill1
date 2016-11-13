@@ -1,5 +1,6 @@
-"use strict";
+'use strict';
 
+var Model = require('./model');
 let jibo = require ('jibo');
 let Status = jibo.bt.Status;
 
