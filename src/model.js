@@ -22,4 +22,10 @@ class Model {
         self._collections.stock = new NeDB({filename: '../db/stock.json'});
         self._collections.voice = new NeDB({filename: '../db/voice.json'});
     }
-}
+
+    ready () {
+        console.log('Model ready!');
+    }
+};
+
+module.exports = Model;
