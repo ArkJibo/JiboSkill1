@@ -17,5 +17,10 @@
     "nedb": "^1.8.0",
     "pixi.js": "^4.1.1"
   },
-  "license": "UNLICENSED"
+  "license": "UNLICENSED",
+  "devDependencies": {
+    "grunt": "^1.0.1",
+    "grunt-contrib-jshint": "^1.0.0",
+    "grunt-shell": "^2.1.0"
+  }
 }
