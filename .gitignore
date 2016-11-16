@@ -1,3 +1,6 @@
+# Custom ignores
+db/*
+
 # Logs
 logs
 *.log

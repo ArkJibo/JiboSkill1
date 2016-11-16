@@ -14,7 +14,8 @@
     "behaviorify": "^1.0.0",
     "imap": "^0.8.18",
     "jibo": "^3.0.7",
-    "nedb": "^1.8.0"
+    "nedb": "^1.8.0",
+    "pixi.js": "^4.1.1"
   },
   "license": "UNLICENSED"
 }
