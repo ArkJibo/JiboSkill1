@@ -38,9 +38,7 @@ class Model {
      */
     _getFromCollection (collection, params, cb) {
         var self = this;
-        self._db[collection].find(params, function (err, docs) {
-            cb (err, docs);
-        });
+        self._db[collection].find(params, cb);
     }
     /**
      * Adder for Collection
@@ -50,9 +48,7 @@ class Model {
      */
     _addToCollection (collection, docs, cb) {
         var self = this;
-        self._db[collection].insert(docs, function (err, docs) {
-            cb (err);
-        });
+        self._db[collection].insert(docs, cb);
     }
     /**
      * Remover for Collection
@@ -62,9 +58,7 @@ class Model {
      */
     _removeFromCollection (collection, params, cb) {
         var self = this;
-        self._db[collection].remove(params, { multi: true }, function (err, numRemoved) {
-            cb (err, numRemoved);
-        });
+        self._db[collection].remove(params, { multi: true }, cb);
     }
     /**
      * Updater for Collection
@@ -100,10 +94,19 @@ class Model {
             finalUpdate, {
                 multi: true,
                 returnUpdatedDocs: updates.returnUpdated || false,
-            }, function (err, numAffected, affectedDocs, upsert) {
-                cb (err, numAffected, affectedDocs);
-            }
+            },
+            cb
         );
+    }
+
+    /**
+     * Completely wipes a collection - USE WITH CAUTION
+     * @param collection Collection name
+     * @param cb Callback
+     */
+    _clearCollection (collection, cb) {
+        var self = this;
+        self._db[collection].remove({}, { multi: true }, cb);
     }
 }
 
