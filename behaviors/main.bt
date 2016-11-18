@@ -5,9 +5,9 @@
         "name": "",
         "asset-pack": "core",
         "children": [
-            "563cd536-ec89-4a10-85f5-aa061a31f31a",
             4,
-            6
+            6,
+            "e74c40e1-f941-4859-8db6-611cfa77d339"
         ],
         "decorators": [],
         "options": {}
@@ -39,14 +39,23 @@
     "meta": {
         "version": 1
     },
-    "563cd536-ec89-4a10-85f5-aa061a31f31a": {
-        "id": "563cd536-ec89-4a10-85f5-aa061a31f31a",
-        "class": "TextToSpeech",
+    "e74c40e1-f941-4859-8db6-611cfa77d339": {
+        "id": "e74c40e1-f941-4859-8db6-611cfa77d339",
+        "class": "ExecuteScript",
         "name": "",
         "options": {
-            "words": "Hi Eric!",
-            "onWord": [
-                "(word) => {",
+            "exec": [
+                "() => {",
+                "  var apiKey = 'dD0SwsmXOxU24hPNPwIuWH'; //change [API_KEY] to your key found at https://ifttt.com/maker",
+                "  var IFTTTMaker = require('iftttmaker')(apiKey);",
+                "  var action = 'jibo_send_email'; //change [EVENT_NAME] to your Maker Event (e.g. jibo_send_mail)",
+                "",
+                "  // Promise",
+                "  IFTTTMaker.send(action, 'hi', 'Im jibo here').then(function () {",
+                "    console.log('Request was sent');",
+                "  }).catch(function (error) {",
+                "    console.log('The request could not be sent:', error);",
+                "  });",
                 "}"
             ]
         },

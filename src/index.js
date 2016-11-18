@@ -1,15 +1,17 @@
-'use strict';
+"use strict";
+
+let jibo = require ('jibo');
+let Status = jibo.bt.Status;
 
 var Model = require('./model');
 var BookKeeper = require('./workers/book-keeper');
 var EmailClient = require('./workers/email-client');
-let jibo = require ('jibo');
-let Status = jibo.bt.Status;
 
 jibo.init('face', function(err) {
     if (err) {
         return console.error(err);
     }
+
     // Load and create the behavior tree
     let root = jibo.bt.create('../behaviors/groove');
     root.start();

@@ -1,5 +1,5 @@
 {
-  "name": "first-project",
+  "name": "jibo-alzheimers",
   "version": "0.1.0",
   "description": "",
   "main": "index.html",
@@ -13,7 +13,6 @@
   "dependencies": {
     "behaviorify": "^1.0.0",
     "enum": "^2.3.0",
-    "imap": "^0.8.18",
     "jibo": "^3.0.7",
     "nedb": "^1.8.0",
     "pixi.js": "^4.1.1"
