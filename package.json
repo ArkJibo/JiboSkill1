@@ -4,13 +4,14 @@
   "description": "",
   "main": "index.html",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "mocha"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/EricXDong/Jibo.git"
+    "url": "https://github.com/ArkJibo/JiboSkill1.git"
   },
   "dependencies": {
+    "async": "^2.1.2",
     "behaviorify": "^1.0.0",
     "enum": "^2.3.0",
     "jibo": "^3.0.7",
@@ -21,6 +22,8 @@
   "devDependencies": {
     "grunt": "^1.0.1",
     "grunt-contrib-jshint": "^1.0.0",
-    "grunt-shell": "^2.1.0"
+    "grunt-mocha-test": "^0.13.2",
+    "grunt-shell": "^2.1.0",
+    "mocha": "^3.1.2"
   }
 }
