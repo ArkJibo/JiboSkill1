@@ -1,6 +1,11 @@
 'use strict';
 
 var Datastore = require('nedb');
+var Util = require('./util');
+var Errors = require('./errors');
+
+var minRepeatInfoKeys = ['type', 'startTime', 'interval'];
+var minReminderInfoKeys = ['type', 'numReminders', 'interval', 'startTime'];
 
 class Model {
     constructor () {
@@ -16,9 +21,7 @@ class Model {
         self._db.medication = new Datastore('./db/medication.db');
         self._db.patient = new Datastore('./db/patient.db');
         self._db.people = new Datastore('./db/people.db');
-        self._db.reminderInfo = new Datastore('./db/reminderInfo.db');
         self._db.reminderQueue = new Datastore('./db/reminderQueue.db');
-        self._db.repeatInfo = new Datastore('./db/repeatInfo.db');
         self._db.shopping = new Datastore('./db/shopping.db');
         self._db.stock = new Datastore('./db/stock.db');
         self._db.voice = new Datastore('./db/voice.db');
@@ -28,7 +31,261 @@ class Model {
         });
     }
 
-    /*****************************************************************************************************************/
+    /*  PUBLIC METHODS  ******************************************************************************************/
+
+    /**
+     * Get the entire schedule for today
+     * @param cb Callback
+     */
+    GetTodaySchedule (cb) {
+
+    }
+
+    /**
+     * Add appointment
+     * @param param Params of appt
+     * @param cb Callback
+     */
+    addAppointment (params, cb) {
+        var self = this;
+
+        //  Verify correct params
+        if (!self._verifyCollectionParams('appointment', params, true)) {
+            cb(Errors.KEY_MISSING);
+            return;
+        }
+
+        self._addToCollection('appointment', params, cb);
+    }
+
+    /**
+     * Add medication
+     * @param param Params of medication
+     * @param cb Callback
+     */
+    addMedication (params, cb) {
+        var self = this;
+
+        //  Verify correct params
+        if (!self._verifyCollectionParams('medication', params, true)) {
+            cb(Errors.KEY_MISSING);
+            return;
+        }
+
+        self._addToCollection('medication', params, cb);
+    }
+
+    /**
+     * Add shopping doc
+     * @param param Params of shopping
+     * @param cb Callback
+     */
+    addShopping (params, cb) {
+        var self = this;
+
+        if (!self._verifyCollectionParams('shopping', params, true) &&
+            !self._checkForKeys(params, ['date', 'itemsBought'])) {
+
+            cb(Errors.KEY_MISSING);
+            return;
+        }
+        if (params.itemsBought) {
+            //  Make sure each array item has correct params
+            for (var i = 0; i < params.itemsBought.length; i++) {
+                if (!self._checkForKeys(params.itemsBought[i], ['name', 'amount'])) {
+                    cb(Errors.KEY_MISSING);
+                    return;
+                }
+            }
+        }
+
+        self._addToCollection('shopping', params, cb);
+    }
+
+    /**
+     * Add info about current stock of household supplies
+     * @param params Params of stock
+     * @param cb Callback
+     */
+    addToStock (params, cb) {
+        var self = this;
+
+        if (!self._verifyCollectionParams('stock', params, false)) {
+            cb(Errors.KEY_MISSING);
+            return;
+        }
+        self._addToCollection('stock', params, cb);
+    }
+
+    /**
+     * Add new bill
+     * @param params Params of bill
+     * @param cb Callback
+     */
+    addBill (params, cb) {
+        var self = this;
+
+        if (!self._verifyCollectionParams('bill', params, true)) {
+            cb(Errors.KEY_MISSING);
+            return;
+        }
+        self._addToCollection('bill', params, cb);
+    }
+
+    /**
+     * Queue reminder
+     * @param params Params of reminder
+     * @param cb Callback
+     */
+    queueReminder (params, cb) {
+        var self = this;
+
+        if (!self._verifyCollectionParams('reminderQueue', params, false)) {
+            cb(Errors.KEY_MISSING);
+            return;
+        }
+
+        //  Also make sure the _id of event exists
+        self._getFromCollection(params.type, {
+            _id: params.event._id
+        }, function (err, docs) {
+            if (err || docs.length === 0) {
+                cb(Errors.BAD_DOC_ID);
+                return;
+            }
+            self._addToCollection('reminderQueue', params, cb);
+        });
+    }
+
+    /**
+     * Add more info about the patient
+     * @param params Params about the new info
+     * @param cb Callback
+     */
+    addPatientInfo (params, cb) {
+        var self = this;
+
+        if (!self._verifyCollectionParams('patient', params, false)) {
+            cb(Errors.KEY_MISSING);
+            return;
+        }
+        self._addToCollection('patient', params, cb);
+    }
+
+    /**
+     * Add info about a person in the patient's life
+     * @param params Params of the person
+     * @param cb Callback
+     */
+    addPerson (params, cb) {
+        var self = this;
+
+        if (!self._verifyCollectionParams('people', params, false)) {
+            cb(Errors.KEY_MISSING);
+            return;
+        }
+        self._addToCollection('people', params, cb);
+    }
+
+    /**
+     * Add new media relevant to the patient
+     * @param params Params of media
+     * @param cb Callback
+     */
+    addMedia (params, cb) {
+        var self = this;
+
+        if (!self._verifyCollectionParams('media', params, false)) {
+            cb(Errors.KEY_MISSING);
+            return;
+        }
+        self._addToCollection('media', params, cb);
+    }
+
+    /**
+     * Add entertainment to randomly show to patient
+     * @param params Params of entertainment
+     * @param cb Callback
+     */
+    addEntertainment (params, cb) {
+        var self = this;
+
+        if (!self._verifyCollectionParams('entertainment', params, false)) {
+            cb(Errors.KEY_MISSING);
+            return;
+        }
+        self._addToCollection('entertainment', params, cb);
+    }
+
+    /**
+     * Add a new voice line for interacting with patient
+     * @param params Params of voice line
+     * @param cb Callback
+     */
+    addVoiceLine (params, cb) {
+        var self = this;
+
+        if (!self._verifyCollectionParams('voice', params, false)) {
+            cb(Errors.KEY_MISSING);
+            return;
+        }
+        self._addToCollection('voice', params, cb);
+    }
+
+    /*  PRIVATE METHODS ******************************************************************************************/
+
+    /**
+     * Util function to verify minimum params of any collection type
+     * @param collection The collection type
+     * @param params Params to verify
+     * @param repeatRemind True if should verify repeatInfo and reminderInfo keys
+     */
+    _verifyCollectionParams (collection, params, repeatRemind) {
+        var self = this;
+
+        var minKeys = {
+            'appointment': ['type', 'people', 'time', 'repeatInfo', 'reminderInfo'],
+            'medication': ['name', 'type', 'lastTaken', 'repeatInfo', 'reminderInfo'],
+            'exercise': ['name', 'details', 'repeatInfo', 'reminderInfo'],
+            'shopping': ['toPurchase', 'repeatInfo', 'reminderInfo'],
+            'stock': ['type', 'name', 'amount'],
+            'bill': ['type', 'amount', 'repeatInfo', 'reminderInfo'],
+            'reminderQueue': ['type', 'event', 'time'],
+            'patient': ['type', 'subType', 'value'],
+            'people': ['first', 'last', 'relationship', 'closeness', 'birthday'],
+            'media': ['type', 'occasion', 'file', 'timesViewed'],
+            'entertainment': ['type', 'dateAdded', 'lastUsed', 'rating'],
+            'voice': ['type', 'line', 'dateAdded']
+        };
+
+        var keys = minKeys[collection];
+        if (keys === undefined) {
+            return false;
+        }
+
+        if (repeatRemind) {
+            return self._checkForKeys(params, keys) && self._checkForKeys(params.repeatInfo, minRepeatInfoKeys) &&
+                self._checkForKeys(params.reminderInfo, minReminderInfoKeys);
+        } else {
+            return self._checkForKeys(params, keys);
+        }
+    }
+
+    /**
+     * Checks if the obj contains the keys
+     * @param obj Object to check
+     * @param keys Keys to look for
+     */
+    _checkForKeys (obj, keys) {
+        var self = this;
+
+        for (var i = 0; i < keys.length; i++) {
+            if (!(keys[i] in obj)) {
+                return false;
+            }
+        }
+        return true;
+    }
 
     /**
      * Getter for Collection
@@ -70,30 +327,12 @@ class Model {
     _updateInCollection (collection, params, updates, cb) {
         var self = this;
 
-        var finalUpdate = {};
-        if (updates.doc) {
-            //  Can provide entire doc to replace
-            finalUpdate = updates.doc;
-        } else {
-            //  Or pass specific ops to perform on the matches
-            Object.keys(updates).forEach(function (key, i) {
-                switch (key) {
-                    case 'set':
-                        finalUpdate['$set'] = updates.set;
-                        break;
-                    case 'increment':
-                        finalUpdate['$inc'] = updates.increment;
-                        break;
-                }
-            });
-        }
-
-        //  Do the update
+        // Can provide entire doc to replace or pass operations
         self._db[collection].update(
             params,
-            finalUpdate, {
+            updates, {
                 multi: true,
-                returnUpdatedDocs: updates.returnUpdated || false,
+                returnUpdatedDocs: true,
             },
             cb
         );
