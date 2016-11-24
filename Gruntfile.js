@@ -20,7 +20,7 @@ module.exports = function (grunt) {
                 esversion: 6,
                 sub: true
             },
-            uses_defaults: ['src/**']
+            uses_defaults: ['src/**/*.js', 'test/**/*.js']
         },
         shell: {
             jibo: {

@@ -1,9 +1,14 @@
+/* global describe, it, before, beforeEach, after, afterEach */
+
+'use strict';
+
 var assert = require('assert');
 var Datastore = require('nedb');
 var fs = require('fs');
 var async = require('async');
 var Model = require('../../src/model');
-var Error = require('../../src/errors');
+var Errors = require('../../src/errors');
+var expect = require('chai').expect;
 
 describe('Model', function () {
     var model = new Model();
@@ -80,7 +85,7 @@ describe('Model', function () {
                 reminderInfo: mockRemind
             }, function (err, doc) {
                 assert.equal(err, null);
-                assert.notEqual(doc, null);
+                expect(doc).to.include.keys('type', 'people', 'time', 'repeatInfo', 'reminderInfo');
                 done();
             });
         });
@@ -89,7 +94,7 @@ describe('Model', function () {
             model.addAppointment({
                 garbage: 'garbage'
             }, function (err, doc) {
-                assert.equal(err, Error.KEY_MISSING);
+                assert.equal(err, Errors.KEY_MISSING);
                 assert.equal(doc, null);
                 done();
             });
@@ -106,7 +111,7 @@ describe('Model', function () {
                 reminderInfo: mockRemind
             }, function (err, doc) {
                 assert.equal(err, null);
-                assert.notEqual(doc, null);
+                expect(doc).to.include.keys('name', 'type', 'lastTaken', 'repeatInfo', 'reminderInfo');
                 done();
             });
         });
@@ -115,7 +120,7 @@ describe('Model', function () {
             model.addMedication({
                 garbage: 'garbage'
             }, function (err, doc) {
-                assert.equal(err, Error.KEY_MISSING);
+                assert.equal(err, Errors.KEY_MISSING);
                 assert.equal(doc, null);
                 done();
             });
@@ -130,7 +135,7 @@ describe('Model', function () {
                 reminderInfo: mockRemind
             }, function (err, doc) {
                 assert.equal(err, null);
-                assert.notEqual(doc, null);
+                expect(doc).to.include.keys('toPurchase', 'repeatInfo', 'reminderInfo');
                 done();
             });
         });
@@ -147,7 +152,7 @@ describe('Model', function () {
                 }]
             }, function (err, doc) {
                 assert.equal(err, null);
-                assert.notEqual(doc, null);
+                expect(doc).to.include.keys('date', 'itemsBought');
                 done();
             });
         });
@@ -157,7 +162,7 @@ describe('Model', function () {
                 toPurchase: ['things', 'more things'],
                 repeatInfo: 'wat'
             }, function (err, doc) {
-                assert.equal(err, Error.KEY_MISSING);
+                assert.equal(err, Errors.KEY_MISSING);
                 assert.equal(doc, null);
                 done();
             });
@@ -167,7 +172,7 @@ describe('Model', function () {
             model.addShopping({
                 date: 'fake time'
             }, function (err, doc) {
-                assert.equal(err, Error.KEY_MISSING);
+                assert.equal(err, Errors.KEY_MISSING);
                 assert.equal(doc, null);
                 done();
             });
@@ -184,7 +189,234 @@ describe('Model', function () {
                     wat: 'wat'
                 }]
             }, function (err, doc) {
-                assert.equal(err, Error.KEY_MISSING);
+                assert.equal(err, Errors.KEY_MISSING);
+                assert.equal(doc, null);
+                done();
+            });
+        });
+    });
+
+    describe('#addToStock()', function () {
+        it('should add to Stock collection', function (done) {
+            model.addToStock({
+                type: 'technology',
+                name: 'iphone',
+                amount: 20
+            }, function (err, doc) {
+                assert.equal(err, null);
+                expect(doc).to.include.keys('type', 'name', 'amount');
+                done();
+            });
+        });
+
+        it('should fail to add Stock', function (done) {
+            model.addToStock({
+                random: 'nonsense'
+            }, function (err, doc) {
+                assert.equal(err, Errors.KEY_MISSING);
+                assert.equal(doc, null);
+                done();
+            });
+        });
+    });
+
+    describe('#addBill()', function () {
+        it('should add to Bill collection', function (done) {
+            model.addBill({
+                type: 'electricity',
+                amount: '150',
+                repeatInfo: mockRepeat,
+                reminderInfo: mockRemind
+            }, function (err, doc) {
+                assert.equal(err, null);
+                expect(doc).to.include.keys('type', 'amount', 'repeatInfo', 'reminderInfo');
+                done();
+            });
+        });
+
+        it('should fail to add to Bill', function (done) {
+            model.addBill({
+                random: 'nonsense'
+            }, function (err, doc) {
+                assert.equal(err, Errors.KEY_MISSING);
+                assert.equal(doc, null);
+                done();
+            });
+        });
+    });
+
+    describe('#queueReminder()', function () {
+        it('should add new Reminder to collection', function (done) {
+            //  Manually insert an event
+            model._db.appointment.insert({
+                _id: 'alksdjhfi3j928htger'
+            }, function (err, docs) {
+                assert.equal(err, null);
+
+                model.queueReminder({
+                    type: 'appointment',
+                    event: {
+                        _id: 'alksdjhfi3j928htger'
+                    },
+                    time: 'now'
+                }, function (err, doc) {
+                    assert.equal(err, null);
+                    expect(doc).to.include.keys('type', 'event', 'time');
+                    done();
+                });
+            });
+        });
+
+        it('should fail for missing key', function (done) {
+            model.queueReminder({
+                why: 'tho'
+            }, function (err, doc) {
+                assert.equal(err, Errors.KEY_MISSING);
+                assert.equal(doc, null);
+                done();
+            });
+        });
+
+        it('should fail for bad _id', function (done) {
+            //  Manually insert an event
+            model._db.appointment.insert({
+                _id: 'alksdjhfi3j928htger'
+            }, function (err, docs) {
+                assert.equal(err, null);
+
+                model.queueReminder({
+                    type: 'appointment',
+                    event: {
+                        _id: 'such a terrible id'
+                    },
+                    time: 'now'
+                }, function (err, doc) {
+                    assert.equal(err, Errors.BAD_DOC_ID);
+                    assert.equal(doc, null);
+                    done();
+                });
+            });
+        });
+    });
+
+    describe('#addPatientInfo()', function () {
+        it('should add new info', function (done) {
+            model.addPatientInfo({
+                type: 'favorite',
+                subType: 'game',
+                value: 'hopscotch'
+            }, function (err, doc) {
+                assert.equal(err, null);
+                expect(doc).to.include.keys('type', 'subType', 'value');
+                done();
+            });
+        });
+
+        it('should fail to add info', function (done) {
+            model.addPatientInfo({
+                random: 'nonsense'
+            }, function (err, doc) {
+                assert.equal(err, Errors.KEY_MISSING);
+                assert.equal(doc, null);
+                done();
+            });
+        });
+    });
+
+    describe('#addPerson()', function () {
+        it('should add new person', function (done) {
+            model.addPerson({
+                first: 'Eric',
+                last: 'Dong',
+                relationship: 'bff forever',
+                closeness: 10,
+                birthday: 'every day'
+            }, function (err, doc) {
+                assert.equal(err, null);
+                expect(doc).to.include.keys('first', 'last', 'relationship', 'closeness', 'birthday');
+                done();
+            });
+        });
+
+        it('should fail to add person', function (done) {
+            model.addPerson({
+                utter: 'nonsense'
+            }, function (err, doc) {
+                assert.equal(err, Errors.KEY_MISSING);
+                assert.equal(doc, null);
+                done();
+            });
+        });
+    });
+
+    describe('#addMedia()', function () {
+        it('should add new media', function (done) {
+            model.addMedia({
+                type: 'photo',
+                occasion: 'wedding',
+                file: 'media/music/banana.mp3',
+                timesViewed: 0
+            }, function (err, doc) {
+                assert.equal(err, null);
+                expect(doc).to.include.keys('type', 'occasion', 'file', 'timesViewed');
+                done();
+            });
+        });
+
+        it('should fail to add media', function (done) {
+            model.addMedia({
+                utter: 'nonsense'
+            }, function (err, doc) {
+                assert.equal(err, Errors.KEY_MISSING);
+                assert.equal(doc, null);
+                done();
+            });
+        });
+    });
+
+    describe('#addEntertainment()', function () {
+        it('should add new entertainment', function (done) {
+            model.addEntertainment({
+                type: 'riddle',
+                dateAdded: 'blah',
+                lastUsed: 'yesterblah',
+                rating: 2
+            }, function (err, doc) {
+                assert.equal(err, null);
+                expect(doc).to.include.keys('type', 'dateAdded', 'lastUsed', 'rating');
+                done();
+            });
+        });
+
+        it('should fail to add entertainment', function (done) {
+            model.addEntertainment({
+                not: 'entertaining'
+            }, function (err, doc) {
+                assert.equal(err, Errors.KEY_MISSING);
+                assert.equal(doc, null);
+                done();
+            });
+        });
+    });
+
+    describe('#addVoiceLine()', function () {
+        it('should add new voice line', function (done) {
+            model.addVoiceLine({
+                type: 'greeting',
+                line: 'Greetings adventurer!',
+                dateAdded: 'yesteryear'
+            }, function (err, doc) {
+                assert.equal(err, null);
+                expect(doc).to.include.keys('type', 'line', 'dateAdded');
+                done();
+            });
+        });
+
+        it('should fail to add voice', function (done) {
+            model.addVoiceLine({
+                bad: 'voice'
+            }, function (err, doc) {
+                assert.equal(err, Errors.KEY_MISSING);
                 assert.equal(doc, null);
                 done();
             });
@@ -224,7 +456,7 @@ describe('Model', function () {
                 hi: 'hi'
             }, function (err, doc) {
                 assert.equal(err, null);
-                assert.notEqual(doc, null);
+                expect(doc).to.include.keys('hi');
                 done();
             });
         });

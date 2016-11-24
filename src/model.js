@@ -102,6 +102,136 @@ class Model {
         self._addToCollection('shopping', params, cb);
     }
 
+    /**
+     * Add info about current stock of household supplies
+     * @param params Params of stock
+     * @param cb Callback
+     */
+    addToStock (params, cb) {
+        var self = this;
+
+        if (!self._verifyCollectionParams('stock', params, false)) {
+            cb(Errors.KEY_MISSING);
+            return;
+        }
+        self._addToCollection('stock', params, cb);
+    }
+
+    /**
+     * Add new bill
+     * @param params Params of bill
+     * @param cb Callback
+     */
+    addBill (params, cb) {
+        var self = this;
+
+        if (!self._verifyCollectionParams('bill', params, true)) {
+            cb(Errors.KEY_MISSING);
+            return;
+        }
+        self._addToCollection('bill', params, cb);
+    }
+
+    /**
+     * Queue reminder
+     * @param params Params of reminder
+     * @param cb Callback
+     */
+    queueReminder (params, cb) {
+        var self = this;
+
+        if (!self._verifyCollectionParams('reminderQueue', params, false)) {
+            cb(Errors.KEY_MISSING);
+            return;
+        }
+
+        //  Also make sure the _id of event exists
+        self._getFromCollection(params.type, {
+            _id: params.event._id
+        }, function (err, docs) {
+            if (err || docs.length === 0) {
+                cb(Errors.BAD_DOC_ID);
+                return;
+            }
+            self._addToCollection('reminderQueue', params, cb);
+        });
+    }
+
+    /**
+     * Add more info about the patient
+     * @param params Params about the new info
+     * @param cb Callback
+     */
+    addPatientInfo (params, cb) {
+        var self = this;
+
+        if (!self._verifyCollectionParams('patient', params, false)) {
+            cb(Errors.KEY_MISSING);
+            return;
+        }
+        self._addToCollection('patient', params, cb);
+    }
+
+    /**
+     * Add info about a person in the patient's life
+     * @param params Params of the person
+     * @param cb Callback
+     */
+    addPerson (params, cb) {
+        var self = this;
+
+        if (!self._verifyCollectionParams('people', params, false)) {
+            cb(Errors.KEY_MISSING);
+            return;
+        }
+        self._addToCollection('people', params, cb);
+    }
+
+    /**
+     * Add new media relevant to the patient
+     * @param params Params of media
+     * @param cb Callback
+     */
+    addMedia (params, cb) {
+        var self = this;
+
+        if (!self._verifyCollectionParams('media', params, false)) {
+            cb(Errors.KEY_MISSING);
+            return;
+        }
+        self._addToCollection('media', params, cb);
+    }
+
+    /**
+     * Add entertainment to randomly show to patient
+     * @param params Params of entertainment
+     * @param cb Callback
+     */
+    addEntertainment (params, cb) {
+        var self = this;
+
+        if (!self._verifyCollectionParams('entertainment', params, false)) {
+            cb(Errors.KEY_MISSING);
+            return;
+        }
+        self._addToCollection('entertainment', params, cb);
+    }
+
+    /**
+     * Add a new voice line for interacting with patient
+     * @param params Params of voice line
+     * @param cb Callback
+     */
+    addVoiceLine (params, cb) {
+        var self = this;
+
+        if (!self._verifyCollectionParams('voice', params, false)) {
+            cb(Errors.KEY_MISSING);
+            return;
+        }
+        self._addToCollection('voice', params, cb);
+    }
+
     /*  PRIVATE METHODS ******************************************************************************************/
 
     /**
@@ -119,8 +249,8 @@ class Model {
             'exercise': ['name', 'details', 'repeatInfo', 'reminderInfo'],
             'shopping': ['toPurchase', 'repeatInfo', 'reminderInfo'],
             'stock': ['type', 'name', 'amount'],
-            'bills': ['type', 'amount', 'repeatInfo', 'reminderInfo'],
-            'reminderQueue': ['event', 'time'],
+            'bill': ['type', 'amount', 'repeatInfo', 'reminderInfo'],
+            'reminderQueue': ['type', 'event', 'time'],
             'patient': ['type', 'subType', 'value'],
             'people': ['first', 'last', 'relationship', 'closeness', 'birthday'],
             'media': ['type', 'occasion', 'file', 'timesViewed'],

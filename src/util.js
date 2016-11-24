@@ -3,10 +3,10 @@
 var Enum = require('enum');
 
 var EVENT_TYPE = new Enum([
-    'APPOINTMENT',
-    'MEDICATION',
-    'EXERCISE',
-    'EATING',
-    'SHOPPING',
-    'BILLS'
+    { 'APPOINTMENT': 'appointment' },
+    { 'MEDICATION': 'medication' },
+    { 'EXERCISE': 'exercise' },
+    { 'EATING': 'stock' },
+    { 'SHOPPING': 'shopping' },
+    { 'BILL': 'bill' }
 ]);
