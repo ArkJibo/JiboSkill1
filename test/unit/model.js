@@ -48,6 +48,8 @@ describe('Model', function () {
                 assert.equal(err, null);
             });
         });
+
+        console.log('\n***NOTE: YOU CAN IGNORE THE DEPRECATION WARNING ABOUT ISO FORMAT');
     });
 
     afterEach(function (done) {
@@ -76,6 +78,260 @@ describe('Model', function () {
         interval: '3y',
         startTime: moment().format()
     };
+
+    describe('#getTodaySchedule()', function () {
+        var insertManual = function (data, cb) {
+            var doc = {};
+            doc[data.time] = data.timeValue;
+
+            model._db[data.col].insert(doc, function (err, doc) {
+                cb(err);
+            });
+        };
+
+        it('should return 4 events for today', function (done) {
+            //  Manually insert the docs
+            var funcs = [
+                insertManual.bind(null, {
+                    time: 'time',
+                    timeValue: moment().toISOString(),
+                    col: 'appointment'
+                }),
+                insertManual.bind(null, {
+                    time: 'lastTaken',
+                    timeValue: moment().toISOString(),
+                    col: 'medication'
+                }),
+                insertManual.bind(null, {
+                    time: 'time',
+                    timeValue: moment().toISOString(),
+                    col: 'exercise'
+                }),
+                insertManual.bind(null, {
+                    time: 'time',
+                    timeValue: moment().toISOString(),
+                    col: 'bill'
+                })
+            ];
+
+            //  Run inserts in parallel
+            async.parallel(funcs, function (err, cb) {
+                assert.equal(err, null);
+
+                model.getTodaySchedule(function (err, docs) {
+                    assert.equal(err, null);
+                    assert.equal(docs.length, 4);
+                    done();
+                });
+            });
+        });
+
+        it('should return 2 events for today because other 2 are not today', function (done) {
+            //  Manually insert the docs
+            var funcs = [
+                insertManual.bind(null, {
+                    time: 'time',
+                    timeValue: moment().toISOString(),
+                    col: 'appointment'
+                }),
+                insertManual.bind(null, {
+                    time: 'lastTaken',
+                    timeValue: moment().toISOString(),
+                    col: 'medication'
+                }),
+                insertManual.bind(null, {
+                    time: 'time',
+                    timeValue: moment().add(1, 'days').toISOString(),   //  Should not be returned because tomorrow
+                    col: 'exercise'
+                }),
+                insertManual.bind(null, {
+                    time: 'time',
+                    timeValue: moment().subtract(1, 'days').toISOString(),  //  Should not be returned because yesterday
+                    col: 'bill'
+                })
+            ];
+
+            //  Run inserts in parallel
+            async.parallel(funcs, function (err, cb) {
+                assert.equal(err, null);
+
+                model.getTodaySchedule(function (err, docs) {
+                    assert.equal(err, null);
+                    assert.equal(docs.length, 2);
+                    done();
+                });
+            });
+        });
+
+        it('should return 2 events for today because other 2 collections are empty', function (done) {
+            //  Manually insert the docs
+            var funcs = [
+                insertManual.bind(null, {
+                    time: 'time',
+                    timeValue: moment().toISOString(),
+                    col: 'appointment'
+                }),
+                insertManual.bind(null, {
+                    time: 'lastTaken',
+                    timeValue: moment().toISOString(),
+                    col: 'medication'
+                })
+            ];
+
+            //  Run inserts in parallel
+            async.parallel(funcs, function (err, cb) {
+                assert.equal(err, null);
+
+                model.getTodaySchedule(function (err, docs) {
+                    assert.equal(err, null);
+                    assert.equal(docs.length, 2);
+                    done();
+                });
+            });
+        });
+
+        it('should return 0 events because all are not today', function (done) {
+            //  Manually insert the docs
+            var funcs = [
+                insertManual.bind(null, {
+                    time: 'time',
+                    timeValue: moment().subtract(1, 'days').toISOString(),  //  Should not be returned because yesterday
+                    col: 'appointment'
+                }),
+                insertManual.bind(null, {
+                    time: 'lastTaken',
+                    timeValue: moment().add(1, 'days').toISOString(),   //  Should not be returned because tomorrow
+                    col: 'medication'
+                }),
+                insertManual.bind(null, {
+                    time: 'time',
+                    timeValue: moment().add(1, 'days').toISOString(),   //  Should not be returned because tomorrow
+                    col: 'exercise'
+                }),
+                insertManual.bind(null, {
+                    time: 'time',
+                    timeValue: moment().subtract(1, 'days').toISOString(),  //  Should not be returned because yesterday
+                    col: 'bill'
+                })
+            ];
+
+            //  Run inserts in parallel
+            async.parallel(funcs, function (err) {
+                assert.equal(err, null);
+
+                model.getTodaySchedule(function (err, docs) {
+                    assert.equal(err, null);
+                    assert.equal(docs.length, 0);
+                    done();
+                });
+            });
+        });
+    });
+
+    describe('#getEntertainment()', function () {
+        beforeEach(function (done) {
+            //  Push in some entertainment docs
+            var entertain = function (params, cb) {
+                model._db.entertainment.insert(params, function (err, docs) {
+                    cb(err);
+                });
+            };
+
+            var funcs = [];
+            var extra = ['typeA', 'typeB'];
+            for (var i = 0; i < 10; i++) {
+                funcs.push(entertain.bind(null, {
+                    extra: extra[Math.floor(i / 5)],
+                    rating: i,
+                    lastUsed: moment().subtract(i, 'days').toISOString()
+                }));
+            }
+
+            async.parallel(funcs, function (err) {
+                assert.equal(err, null);
+                done();
+            });
+        });
+
+
+        it('should get entertainment with no custom params', function (done) {
+            model.getEntertainment({
+                extra: 'typeA'
+            }, function (err, doc, numDocs) {
+                assert.equal(err, null);
+                assert.equal(doc.extra, 'typeA');
+                assert.equal(numDocs, 5);
+                done();
+            });
+        });
+
+        it('should get entertainment with rating custom params', function (done) {
+            model.getEntertainment({
+                extra: 'typeB',
+                custom: {
+                    ratingMin: 6
+                }
+            }, function (err, doc, numDocs) {
+                assert.equal(err, null);
+                assert.equal(doc.extra, 'typeB');
+                expect(doc.rating).to.be.at.least(6);
+                assert.equal(numDocs, 4);
+
+                model.getEntertainment({
+                    extra: 'typeB',
+                    custom: {
+                        ratingMin: 6,
+                        ratingMax: 8
+                    }
+                }, function (err, doc, numDocs) {
+                    assert.equal(err, null);
+                    assert.equal(doc.extra, 'typeB');
+                    expect(doc.rating).to.be.at.least(6).and.at.most(8);
+                    assert.equal(numDocs, 3);
+                    done();
+                });
+            });
+        });
+
+        it('should get entertainment with lastUsed custom params', function (done) {
+            model.getEntertainment({
+                extra: 'typeA',
+                custom: {
+                    notUsedSince: moment().subtract(3, 'days').toISOString()
+                }
+            }, function (err, doc, numDocs) {
+                assert.equal(err, null);
+                assert.equal(doc.extra, 'typeA');
+                assert.equal(numDocs, 2);
+
+                model.getEntertainment({
+                    extra: 'typeB',
+                    custom: {
+                        notUsedSince: moment().subtract(6, 'days').toISOString(),
+                        notUsedBefore: moment().subtract(8, 'days').toISOString()
+                    }
+                }, function (err, doc, numDocs) {
+                    assert.equal(err, null);
+                    assert.equal(doc.extra, 'typeB');
+                    assert.equal(numDocs, 2);
+                    done();
+                });
+            });
+        });
+
+        it('should get entertainment with both lastUsed and rating', function (done) {
+            model.getEntertainment({
+                custom: {
+                    notUsedSince: moment().subtract(4, 'days').toISOString(),
+                    ratingMin: 7
+                }
+            }, function (err, doc, numDocs) {
+                assert.equal(err, null);
+                assert.equal(numDocs, 3);
+                done();
+            });
+        });
+    });
 
     describe('#addAppointment()', function () {
         it('should add appointment', function (done) {

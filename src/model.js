@@ -39,8 +39,95 @@ class Model {
      * Get the entire schedule for today
      * @param cb Callback
      */
-    GetTodaySchedule (cb) {
+    getTodaySchedule (cb) {
+        var self = this;
 
+        var start = moment().startOf('day').toISOString();
+        var end = moment().endOf('day').toISOString();
+        var now = moment().toISOString();
+
+        //  Need to check appointments, medication, exercise, and bills
+        var fetchFrom = [{
+            col: 'appointment',
+            date: 'time'
+        }, {
+            col: 'medication',
+            date: 'lastTaken'
+        }, {
+            col: 'exercise',
+            date: 'time'
+        }, {
+            col: 'bill',
+            date: 'time'
+        }];
+
+        //  Define function for fetch docs
+        var fetch = function (toFetch, cb) {
+            var query = {};
+
+            query[toFetch.date] = {
+                $gt: moment().startOf('day').toISOString(),
+                $lt: moment().endOf('day').toISOString()
+            };
+            self._getFromCollection(toFetch.col, query, function (err, docs) {
+                cb(err, docs);
+            });
+        };
+
+        //  Build list of queries for each collection to run in parallel
+        var fetchFuncs = [];
+        for (var i = 0; i < fetchFrom.length; i++) {
+            fetchFuncs.push(fetch.bind(null, fetchFrom[i]));
+        }
+
+        async.parallel(fetchFuncs, function (err, results) {
+            //  Concat all the returned doc arrays
+            var concat = [];
+            for (var i = 0; i < results.length; i++) {
+                concat = concat.concat(results[i]);
+            }
+            cb(err, concat);
+        });
+    }
+
+    /**
+     * Get a random entertainment object that matches the params
+     * @param params Params to match against
+     * @param cb Callback
+     */
+    getEntertainment (params, cb) {
+        var self = this;
+
+        //  Process custom params
+        if (params.custom) {
+            Object.keys(params.custom).forEach(function (key) {
+                //  Convert to nosql queries
+                switch (key) {
+                    case 'ratingMin':
+                        params.rating = params.rating || {};
+                        params.rating.$gte =  params.custom[key];
+                        break;
+                    case 'ratingMax':
+                        params.rating = params.rating || {};
+                        params.rating.$lte =  params.custom[key];
+                        break;
+                    case 'notUsedSince':
+                        params.lastUsed = params.lastUsed || {};
+                        params.lastUsed.$lte = params.custom[key];
+                        break;
+                    case 'notUsedBefore':
+                        params.lastUsed = params.lastUsed || {};
+                        params.lastUsed.$gte = params.custom[key];
+                        break;
+                }
+            });
+            delete params.custom;
+        }
+
+        self._getFromCollection('entertainment', params, function (err, docs) {
+            var random = Math.floor(Math.random() * docs.length);
+            cb(err, docs[random], docs.length);
+        });
     }
 
     /**
@@ -395,8 +482,8 @@ class Model {
                 for (var i = 0; i < dateKeys[collection][docType].length; i++) {
                     paramsDateCheck = moment(params[dateKeys[collection][docType][i]]).isValid() && paramsDateCheck;
                     if (paramsDateCheck) {
-                        //  Convert to moment object for storage
-                        params[dateKeys[collection][docType][i]] = moment(params[dateKeys[collection][docType][i]]);
+                        //  Convert to ISO date for storage
+                        params[dateKeys[collection][docType][i]] = moment(params[dateKeys[collection][docType][i]]).toISOString();
                     }
                 }
             }

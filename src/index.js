@@ -21,45 +21,6 @@ jibo.init('face', function(err) {
     jibo.keeper = new BookKeeper();
     jibo.email = new EmailClient();
 
-    jibo.model.addAppointment({
-        type: 'dentist',
-        people: ['yeh'],
-        time: 'now',
-        repeatInfo: {
-            type: 'appointment',
-            startTime: Date.now(),
-            interval: '4h',
-            extra: 'alsdkf'
-        },
-        reminderInfo: {
-            type: 'appointment',
-            numReminders: 4,
-            interval: '5y',
-            startTime: Date.now()
-        }
-    }, function (err, docs) {
-        console.log(err || JSON.stringify(docs, 0, 1));
-        jibo.model.addAppointment({
-            type: 'dentist',
-            people: ['yeh'],
-            time: 'now',
-            repeatInfo: {
-                type: 'appointment',
-                startTime: Date.now(),
-                interval: '4h',
-                extra: 'alsdkf'
-            },
-            reminderInfo: {
-                type: 'appointment',
-                numReminders: 4,
-                interval: '5y',
-                startTime: Date.now()
-            }
-        }, function (err, docs) {
-            console.log(err || JSON.stringify(docs, 0, 1));
-        });
-    });
-
     // Listen for the jibo main update loop
     jibo.timer.on('update', function(elapsed) {
         // If the tree is in progress, keep updating
