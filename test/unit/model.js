@@ -6,6 +6,7 @@ var assert = require('assert');
 var Datastore = require('nedb');
 var fs = require('fs');
 var async = require('async');
+var moment = require('moment');
 var Model = require('../../src/model');
 var Errors = require('../../src/errors');
 var expect = require('chai').expect;
@@ -65,14 +66,15 @@ describe('Model', function () {
 
     var mockRepeat = {
         type: 'winning',
-        startTime: 'fake time',
+        startTime: moment().format(),
+        endTime: moment().format(),
         interval: '10w'
     };
     var mockRemind = {
         type: 'much winning',
         numReminders: 1337,
         interval: '3y',
-        startTime: 'fake time'
+        startTime: moment().format()
     };
 
     describe('#addAppointment()', function () {
@@ -80,7 +82,7 @@ describe('Model', function () {
             model.addAppointment({
                 type: 'dentist',
                 people: ['Eddie Redmayne', 'Sarah Zhou'],
-                time: 'fake time',
+                time: moment().format(),
                 repeatInfo: mockRepeat,
                 reminderInfo: mockRemind
             }, function (err, doc) {
@@ -90,11 +92,25 @@ describe('Model', function () {
             });
         });
 
-        it('should fail to add appointment', function (done) {
+        it('should fail to add appointment because missing key', function (done) {
             model.addAppointment({
                 garbage: 'garbage'
             }, function (err, doc) {
                 assert.equal(err, Errors.KEY_MISSING);
+                assert.equal(doc, null);
+                done();
+            });
+        });
+
+        it('should fail to add appointment because invalid date', function (done) {
+            model.addAppointment({
+                type: 'dentist',
+                people: ['Eddie Redmayne', 'Sarah Zhou'],
+                time: 'nonsense',
+                repeatInfo: mockRepeat,
+                reminderInfo: mockRemind
+            }, function (err, doc) {
+                assert.equal(err, Errors.INVALID_DATE);
                 assert.equal(doc, null);
                 done();
             });
@@ -106,7 +122,7 @@ describe('Model', function () {
             model.addMedication({
                 name: 'Donald Trump',
                 type: 'makeyougreatagain',
-                lastTaken: 'fake date',
+                lastTaken: moment().format(),
                 repeatInfo: mockRepeat,
                 reminderInfo: mockRemind
             }, function (err, doc) {
@@ -116,7 +132,7 @@ describe('Model', function () {
             });
         });
 
-        it('should fail to add medication', function (done) {
+        it('should fail to add medication because missing key', function (done) {
             model.addMedication({
                 garbage: 'garbage'
             }, function (err, doc) {
@@ -125,9 +141,61 @@ describe('Model', function () {
                 done();
             });
         });
+
+        it('should fail to add medication because invalid date', function (done) {
+            model.addMedication({
+                name: 'Donald Trump',
+                type: 'makeyougreatagain',
+                lastTaken: 'nonsense',
+                repeatInfo: mockRepeat,
+                reminderInfo: mockRemind
+            }, function (err, doc) {
+                assert.equal(err, Errors.INVALID_DATE);
+                assert.equal(doc, null);
+                done();
+            });
+        });
     });
 
-    describe('#addShopping', function () {
+    describe('#addExercise()', function () {
+        it('should add exercise', function (done) {
+            model.addExercise({
+                name: 'Go running',
+                time: moment().format(),
+                repeatInfo: mockRepeat,
+                reminderInfo: mockRemind
+            }, function (err, doc) {
+                assert.equal(err, null);
+                expect(doc).to.include.keys('name', 'repeatInfo', 'reminderInfo');
+                done();
+            });
+        });
+
+        it('should fail to add exercise because missing key', function (done) {
+            model.addExercise({
+                garbage: 'garbage'
+            }, function (err, doc) {
+                assert.equal(err, Errors.KEY_MISSING);
+                assert.equal(doc, null);
+                done();
+            });
+        });
+
+        it('should fail to add exercise because invalid date', function (done) {
+            model.addExercise({
+                name: 'Go running',
+                time: 'nonsense',
+                repeatInfo: mockRepeat,
+                reminderInfo: mockRemind
+            }, function (err, doc) {
+                assert.equal(err, Errors.INVALID_DATE);
+                assert.equal(doc, null);
+                done();
+            });
+        });
+    });
+
+    describe('#addShopping()', function () {
         it('should add shopping list', function (done) {
             model.addShopping({
                 toPurchase: ['things', 'more things'],
@@ -142,7 +210,7 @@ describe('Model', function () {
 
         it('should add shopping record', function (done) {
             model.addShopping({
-                date: 'fake time',
+                date: moment().format(),
                 itemsBought: [{
                     name: 'eraser',
                     amount: 12
@@ -225,6 +293,7 @@ describe('Model', function () {
             model.addBill({
                 type: 'electricity',
                 amount: '150',
+                time: moment().format(),
                 repeatInfo: mockRepeat,
                 reminderInfo: mockRemind
             }, function (err, doc) {
@@ -258,7 +327,7 @@ describe('Model', function () {
                     event: {
                         _id: 'alksdjhfi3j928htger'
                     },
-                    time: 'now'
+                    time: moment().format()
                 }, function (err, doc) {
                     assert.equal(err, null);
                     expect(doc).to.include.keys('type', 'event', 'time');
@@ -289,7 +358,7 @@ describe('Model', function () {
                     event: {
                         _id: 'such a terrible id'
                     },
-                    time: 'now'
+                    time: moment().format()
                 }, function (err, doc) {
                     assert.equal(err, Errors.BAD_DOC_ID);
                     assert.equal(doc, null);
@@ -330,7 +399,7 @@ describe('Model', function () {
                 last: 'Dong',
                 relationship: 'bff forever',
                 closeness: 10,
-                birthday: 'every day'
+                birthday: moment().format()
             }, function (err, doc) {
                 assert.equal(err, null);
                 expect(doc).to.include.keys('first', 'last', 'relationship', 'closeness', 'birthday');
@@ -378,8 +447,8 @@ describe('Model', function () {
         it('should add new entertainment', function (done) {
             model.addEntertainment({
                 type: 'riddle',
-                dateAdded: 'blah',
-                lastUsed: 'yesterblah',
+                dateAdded: moment().format(),
+                lastUsed: moment().format(),
                 rating: 2
             }, function (err, doc) {
                 assert.equal(err, null);
@@ -404,7 +473,7 @@ describe('Model', function () {
             model.addVoiceLine({
                 type: 'greeting',
                 line: 'Greetings adventurer!',
-                dateAdded: 'yesteryear'
+                dateAdded: moment().format()
             }, function (err, doc) {
                 assert.equal(err, null);
                 expect(doc).to.include.keys('type', 'line', 'dateAdded');
@@ -425,8 +494,17 @@ describe('Model', function () {
 
     describe('#_verifyCollectionParams()', function () {
         it('should fail because bad collection', function (done) {
-            assert.equal(model._verifyCollectionParams('mouse', {}, true), false);
-            done();
+            model._verifyCollectionParams('mouse', 'default', {}, true, function (err) {
+                assert.equal(err, Errors.INVALID_COLLECTION);
+                done();
+            });
+        });
+
+        it('should fail because bad docType', function (done) {
+            model._verifyCollectionParams('appointment', 'badbadbad', {}, true, function (err) {
+                assert.equal(err, Errors.INVALID_DOCTYPE);
+                done();
+            });
         });
     });
 

@@ -1,10 +1,12 @@
 'use strict';
 
 var Datastore = require('nedb');
+var moment = require('moment');
 var Util = require('./util');
 var Errors = require('./errors');
+var async = require('async');
 
-var minRepeatInfoKeys = ['type', 'startTime', 'interval'];
+var minRepeatInfoKeys = ['type', 'startTime', 'interval', 'endTime'];
 var minReminderInfoKeys = ['type', 'numReminders', 'interval', 'startTime'];
 
 class Model {
@@ -50,12 +52,14 @@ class Model {
         var self = this;
 
         //  Verify correct params
-        if (!self._verifyCollectionParams('appointment', params, true)) {
-            cb(Errors.KEY_MISSING);
-            return;
-        }
-
-        self._addToCollection('appointment', params, cb);
+        self._verifyCollectionParams('appointment', 'default', params, true, function (err) {
+            if (err) {
+                cb(err);
+            } else {
+                //  All is good, add to collection
+                self._addToCollection('appointment', params, cb);
+            }
+        });
     }
 
     /**
@@ -67,12 +71,33 @@ class Model {
         var self = this;
 
         //  Verify correct params
-        if (!self._verifyCollectionParams('medication', params, true)) {
-            cb(Errors.KEY_MISSING);
-            return;
-        }
+        self._verifyCollectionParams('medication', 'default', params, true, function (err) {
+            if (err) {
+                cb(err);
+            } else {
+                //  All is good, add to collection
+                self._addToCollection('medication', params, cb);
+            }
+        });
+    }
 
-        self._addToCollection('medication', params, cb);
+    /**
+     * Add exercise event
+     * @param param Params of exercise
+     * @param cb Callback
+     */
+    addExercise (params, cb) {
+        var self = this;
+
+        //  Verify correct params
+        self._verifyCollectionParams('exercise', 'default', params, true, function (err) {
+            if (err) {
+                cb(err);
+            } else {
+                //  All is good, add to collection
+                self._addToCollection('exercise', params, cb);
+            }
+        });
     }
 
     /**
@@ -83,23 +108,25 @@ class Model {
     addShopping (params, cb) {
         var self = this;
 
-        if (!self._verifyCollectionParams('shopping', params, true) &&
-            !self._checkForKeys(params, ['date', 'itemsBought'])) {
-
-            cb(Errors.KEY_MISSING);
-            return;
-        }
-        if (params.itemsBought) {
-            //  Make sure each array item has correct params
-            for (var i = 0; i < params.itemsBought.length; i++) {
-                if (!self._checkForKeys(params.itemsBought[i], ['name', 'amount'])) {
-                    cb(Errors.KEY_MISSING);
-                    return;
+        //  Verify correct params for either record doc or default doc
+        var isRecord = params.itemsBought !== undefined;
+        self._verifyCollectionParams('shopping', isRecord ? 'record' : 'default', params, !isRecord, function (err) {
+            if (err) {
+                cb(err);
+            } else {
+                if (isRecord) {
+                    //  Make sure each array item has correct params
+                    for (var i = 0; i < params.itemsBought.length; i++) {
+                        if (!self._checkForKeys(params.itemsBought[i], ['name', 'amount'])) {
+                            cb(Errors.KEY_MISSING);
+                            return;
+                        }
+                    }
                 }
+                //  All is good, add to collection
+                self._addToCollection('shopping', params, cb);
             }
-        }
-
-        self._addToCollection('shopping', params, cb);
+        });
     }
 
     /**
@@ -110,11 +137,15 @@ class Model {
     addToStock (params, cb) {
         var self = this;
 
-        if (!self._verifyCollectionParams('stock', params, false)) {
-            cb(Errors.KEY_MISSING);
-            return;
-        }
-        self._addToCollection('stock', params, cb);
+        //  Verify correct params
+        self._verifyCollectionParams('stock', 'default', params, false, function (err) {
+            if (err) {
+                cb(err);
+            } else {
+                //  All is good, add to collection
+                self._addToCollection('stock', params, cb);
+            }
+        });
     }
 
     /**
@@ -125,11 +156,15 @@ class Model {
     addBill (params, cb) {
         var self = this;
 
-        if (!self._verifyCollectionParams('bill', params, true)) {
-            cb(Errors.KEY_MISSING);
-            return;
-        }
-        self._addToCollection('bill', params, cb);
+        //  Verify correct params
+        self._verifyCollectionParams('bill', 'default', params, false, function (err) {
+            if (err) {
+                cb(err);
+            } else {
+                //  All is good, add to collection
+                self._addToCollection('bill', params, cb);
+            }
+        });
     }
 
     /**
@@ -140,20 +175,23 @@ class Model {
     queueReminder (params, cb) {
         var self = this;
 
-        if (!self._verifyCollectionParams('reminderQueue', params, false)) {
-            cb(Errors.KEY_MISSING);
-            return;
-        }
-
-        //  Also make sure the _id of event exists
-        self._getFromCollection(params.type, {
-            _id: params.event._id
-        }, function (err, docs) {
-            if (err || docs.length === 0) {
-                cb(Errors.BAD_DOC_ID);
-                return;
+        //  Verify correct params
+        self._verifyCollectionParams('reminderQueue', 'default', params, false, function (err) {
+            if (err) {
+                cb(err);
+            } else {
+                //  Also make sure the _id of event exists
+                self._getFromCollection(params.type, {
+                    _id: params.event._id
+                }, function (err, docs) {
+                    if (err || docs.length === 0) {
+                        cb(err || Errors.BAD_DOC_ID);
+                        return;
+                    }
+                    //  All is good, add to collection
+                    self._addToCollection('reminderQueue', params, cb);
+                });
             }
-            self._addToCollection('reminderQueue', params, cb);
         });
     }
 
@@ -165,11 +203,15 @@ class Model {
     addPatientInfo (params, cb) {
         var self = this;
 
-        if (!self._verifyCollectionParams('patient', params, false)) {
-            cb(Errors.KEY_MISSING);
-            return;
-        }
-        self._addToCollection('patient', params, cb);
+        //  Verify correct params
+        self._verifyCollectionParams('patient', 'default', params, false, function (err) {
+            if (err) {
+                cb(err);
+            } else {
+                //  All is good, add to collection
+                self._addToCollection('patient', params, cb);
+            }
+        });
     }
 
     /**
@@ -180,11 +222,15 @@ class Model {
     addPerson (params, cb) {
         var self = this;
 
-        if (!self._verifyCollectionParams('people', params, false)) {
-            cb(Errors.KEY_MISSING);
-            return;
-        }
-        self._addToCollection('people', params, cb);
+        //  Verify correct params
+        self._verifyCollectionParams('people', 'default', params, false, function (err) {
+            if (err) {
+                cb(err);
+            } else {
+                //  All is good, add to collection
+                self._addToCollection('people', params, cb);
+            }
+        });
     }
 
     /**
@@ -195,11 +241,15 @@ class Model {
     addMedia (params, cb) {
         var self = this;
 
-        if (!self._verifyCollectionParams('media', params, false)) {
-            cb(Errors.KEY_MISSING);
-            return;
-        }
-        self._addToCollection('media', params, cb);
+        //  Verify correct params
+        self._verifyCollectionParams('media', 'default', params, false, function (err) {
+            if (err) {
+                cb(err);
+            } else {
+                //  All is good, add to collection
+                self._addToCollection('media', params, cb);
+            }
+        });
     }
 
     /**
@@ -210,11 +260,15 @@ class Model {
     addEntertainment (params, cb) {
         var self = this;
 
-        if (!self._verifyCollectionParams('entertainment', params, false)) {
-            cb(Errors.KEY_MISSING);
-            return;
-        }
-        self._addToCollection('entertainment', params, cb);
+        //  Verify correct params
+        self._verifyCollectionParams('entertainment', 'default', params, false, function (err) {
+            if (err) {
+                cb(err);
+            } else {
+                //  All is good, add to collection
+                self._addToCollection('entertainment', params, cb);
+            }
+        });
     }
 
     /**
@@ -225,11 +279,15 @@ class Model {
     addVoiceLine (params, cb) {
         var self = this;
 
-        if (!self._verifyCollectionParams('voice', params, false)) {
-            cb(Errors.KEY_MISSING);
-            return;
-        }
-        self._addToCollection('voice', params, cb);
+        //  Verify correct params
+        self._verifyCollectionParams('voice', 'default', params, false, function (err) {
+            if (err) {
+                cb(err);
+            } else {
+                //  All is good, add to collection
+                self._addToCollection('voice', params, cb);
+            }
+        });
     }
 
     /*  PRIVATE METHODS ******************************************************************************************/
@@ -237,37 +295,124 @@ class Model {
     /**
      * Util function to verify minimum params of any collection type
      * @param collection The collection type
+     * @param docType Type of doc within the collection
      * @param params Params to verify
      * @param repeatRemind True if should verify repeatInfo and reminderInfo keys
+     * @param cb Callback
      */
-    _verifyCollectionParams (collection, params, repeatRemind) {
+    _verifyCollectionParams (collection, docType, params, repeatRemind, cb) {
         var self = this;
 
+        var dateKeys = {
+            'appointment': {
+                'default': ['time']
+            },
+            'medication': {
+                'default': ['lastTaken']
+            },
+            'exercise': {
+                'default': ['time']
+            },
+            'bill': {
+                'default': ['time']
+            },
+            'reminderQueue': {
+                'default': ['time']
+            },
+            'people': {
+                'default': ['birthday']
+            },
+            'entertainment': {
+                'default': ['dateAdded', 'lastUsed']
+            },
+            'voice': {
+                'default': ['dateAdded']
+            }
+        };
         var minKeys = {
-            'appointment': ['type', 'people', 'time', 'repeatInfo', 'reminderInfo'],
-            'medication': ['name', 'type', 'lastTaken', 'repeatInfo', 'reminderInfo'],
-            'exercise': ['name', 'details', 'repeatInfo', 'reminderInfo'],
-            'shopping': ['toPurchase', 'repeatInfo', 'reminderInfo'],
-            'stock': ['type', 'name', 'amount'],
-            'bill': ['type', 'amount', 'repeatInfo', 'reminderInfo'],
-            'reminderQueue': ['type', 'event', 'time'],
-            'patient': ['type', 'subType', 'value'],
-            'people': ['first', 'last', 'relationship', 'closeness', 'birthday'],
-            'media': ['type', 'occasion', 'file', 'timesViewed'],
-            'entertainment': ['type', 'dateAdded', 'lastUsed', 'rating'],
-            'voice': ['type', 'line', 'dateAdded']
+            'appointment': {
+                'default': ['type', 'people', 'time', 'repeatInfo', 'reminderInfo']
+            },
+            'medication': {
+                'default': ['name', 'type', 'lastTaken', 'repeatInfo', 'reminderInfo']
+            },
+            'exercise': {
+                'default': ['name', 'time', 'repeatInfo', 'reminderInfo']
+            },
+            'shopping': {
+                'default': ['toPurchase', 'repeatInfo', 'reminderInfo'],
+                'record': ['date', 'itemsBought']
+            },
+            'stock': {
+                'default': ['type', 'name', 'amount']
+            },
+            'bill': {
+                'default': ['type', 'amount', 'time', 'repeatInfo', 'reminderInfo']
+            },
+            'reminderQueue': {
+                'default': ['type', 'event', 'time']
+            },
+            'patient': {
+                'default': ['type', 'subType', 'value']
+            },
+            'people': {
+                'default': ['first', 'last', 'relationship', 'closeness', 'birthday']
+            },
+            'media': {
+                'default': ['type', 'occasion', 'file', 'timesViewed']
+            },
+            'entertainment': {
+                'default': ['type', 'dateAdded', 'lastUsed', 'rating']
+            },
+            'voice': {
+                'default': ['type', 'line', 'dateAdded']
+            }
         };
 
-        var keys = minKeys[collection];
-        if (keys === undefined) {
-            return false;
+        //  Verify collection/docType args
+        if (!minKeys[collection]) {
+            cb(Errors.INVALID_COLLECTION);
+            return;
+        } else if (!minKeys[collection][docType]) {
+            cb(Errors.INVALID_DOCTYPE);
+            return;
+        }
+        var keys = minKeys[collection][docType];
+
+        //  Verify all the things
+        var paramsCheck = self._checkForKeys(params, keys);
+        var repeatCheck = !repeatRemind || self._checkForKeys(params.repeatInfo, minRepeatInfoKeys);
+        var remindCheck = !repeatRemind || self._checkForKeys(params.reminderInfo, minReminderInfoKeys);
+        var paramsDateCheck = true;
+        var repeatDateCheck = true;
+        var remindDateCheck = true;
+
+        if (dateKeys[collection]) {
+            //  Bad params if docType is invalid
+            if (!dateKeys[collection][docType]) {
+                paramsDateCheck = false;
+            } else {
+                for (var i = 0; i < dateKeys[collection][docType].length; i++) {
+                    paramsDateCheck = moment(params[dateKeys[collection][docType][i]]).isValid() && paramsDateCheck;
+                    if (paramsDateCheck) {
+                        //  Convert to moment object for storage
+                        params[dateKeys[collection][docType][i]] = moment(params[dateKeys[collection][docType][i]]);
+                    }
+                }
+            }
+        }
+        if (repeatRemind) {
+            repeatDateCheck = params.repeatInfo && moment(params.repeatInfo.startTime).isValid() &&
+                moment(params.repeatInfo.endTime).isValid();
+            remindDateCheck = params.reminderInfo && moment(params.reminderInfo.startTime).isValid();
         }
 
-        if (repeatRemind) {
-            return self._checkForKeys(params, keys) && self._checkForKeys(params.repeatInfo, minRepeatInfoKeys) &&
-                self._checkForKeys(params.reminderInfo, minReminderInfoKeys);
+        if (!(paramsCheck && repeatCheck && remindCheck)) {
+            cb(Errors.KEY_MISSING);
+        } else if (!(paramsDateCheck && repeatDateCheck && remindDateCheck)) {
+            cb(Errors.INVALID_DATE);
         } else {
-            return self._checkForKeys(params, keys);
+            cb();   //  Success
         }
     }
 
@@ -278,6 +423,10 @@ class Model {
      */
     _checkForKeys (obj, keys) {
         var self = this;
+
+        if (!obj || typeof obj !== 'object') {
+            return false;
+        }
 
         for (var i = 0; i < keys.length; i++) {
             if (!(keys[i] in obj)) {
