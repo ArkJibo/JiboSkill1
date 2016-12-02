@@ -13,7 +13,6 @@
   "dependencies": {
     "async": "^2.1.2",
     "behaviorify": "^1.0.0",
-    "enum": "^2.3.0",
     "jibo": "^3.0.7",
     "moment": "^2.17.0",
     "nedb": "^1.8.0",

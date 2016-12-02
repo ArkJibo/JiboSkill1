@@ -8,6 +8,71 @@ var async = require('async');
 
 var minRepeatInfoKeys = ['type', 'startTime', 'interval', 'endTime'];
 var minReminderInfoKeys = ['type', 'numReminders', 'interval', 'startTime'];
+var dateKeys = {
+    'appointment': {
+        'default': ['time']
+    },
+    'medication': {
+        'default': ['lastTaken']
+    },
+    'exercise': {
+        'default': ['time']
+    },
+    'bill': {
+        'default': ['time']
+    },
+    'reminderQueue': {
+        'default': ['time']
+    },
+    'people': {
+        'default': ['birthday']
+    },
+    'entertainment': {
+        'default': ['dateAdded', 'lastUsed']
+    },
+    'voice': {
+        'default': ['dateAdded']
+    }
+};
+var minKeys = {
+    'appointment': {
+        'default': ['type', 'people', 'time', 'repeatInfo', 'reminderInfo']
+    },
+    'medication': {
+        'default': ['name', 'type', 'lastTaken', 'repeatInfo', 'reminderInfo']
+    },
+    'exercise': {
+        'default': ['name', 'time', 'repeatInfo', 'reminderInfo']
+    },
+    'shopping': {
+        'default': ['toPurchase', 'repeatInfo', 'reminderInfo'],
+        'record': ['date', 'itemsBought']
+    },
+    'stock': {
+        'default': ['type', 'name', 'amount']
+    },
+    'bill': {
+        'default': ['type', 'amount', 'time', 'repeatInfo', 'reminderInfo']
+    },
+    'reminderQueue': {
+        'default': ['type', 'event', 'time']
+    },
+    'patient': {
+        'default': ['type', 'subType', 'value']
+    },
+    'people': {
+        'default': ['first', 'last', 'relationship', 'closeness', 'birthday']
+    },
+    'media': {
+        'default': ['type', 'occasion', 'file', 'timesViewed']
+    },
+    'entertainment': {
+        'default': ['type', 'dateAdded', 'lastUsed', 'rating']
+    },
+    'voice': {
+        'default': ['type', 'line', 'dateAdded']
+    }
+};
 
 class Model {
     constructor () {
@@ -100,34 +165,198 @@ class Model {
 
         //  Process custom params
         if (params.custom) {
-            Object.keys(params.custom).forEach(function (key) {
-                //  Convert to nosql queries
-                switch (key) {
-                    case 'ratingMin':
-                        params.rating = params.rating || {};
-                        params.rating.$gte =  params.custom[key];
-                        break;
-                    case 'ratingMax':
-                        params.rating = params.rating || {};
-                        params.rating.$lte =  params.custom[key];
-                        break;
-                    case 'notUsedSince':
-                        params.lastUsed = params.lastUsed || {};
-                        params.lastUsed.$lte = params.custom[key];
-                        break;
-                    case 'notUsedBefore':
-                        params.lastUsed = params.lastUsed || {};
-                        params.lastUsed.$gte = params.custom[key];
-                        break;
+            params = self._processCustomParams(params, {
+                ratingMin: {
+                    name: 'rating',
+                    op: '$gte',
+                    value: params.custom.ratingMin
+                },
+                ratingMax: {
+                    name: 'rating',
+                    op: '$lte',
+                    value: params.custom.ratingMax
+                },
+                notUsedSince: {
+                    name: 'lastUsed',
+                    op: '$lte',
+                    value: params.custom.notUsedSince
+                },
+                notUsedBefore: {
+                    name: 'lastUsed',
+                    op: '$gte',
+                    value: params.custom.notUsedBefore
                 }
             });
-            delete params.custom;
         }
 
         self._getFromCollection('entertainment', params, function (err, docs) {
             var random = Math.floor(Math.random() * docs.length);
             cb(err, docs[random], docs.length);
         });
+    }
+
+    /**
+     * Get info about the patient
+     * @param Params to match against
+     * @param cb Callback
+     */
+    getPatientInfo (params, cb) {
+        var self = this;
+
+        self._getFromCollection('patient', params, cb);
+    }
+
+    /**
+     * Get info about a person or people in the patient's life
+     * @param Params to match against
+     * @param cb Callback
+     */
+    getPersonInfo (params, cb) {
+        var self = this;
+
+        //  Process custom params
+        if (params.custom) {
+            params = self._processCustomParams(params, {
+                closenessMin: {
+                    name: 'closeness',
+                    op: '$gte',
+                    value: params.custom.closenessMin
+                },
+                closenessMax: {
+                    name: 'closeness',
+                    op: '$lte',
+                    value: params.custom.closenessMax
+                }
+            });
+        }
+
+        self._getFromCollection('people', params, cb);
+    }
+
+    /**
+     * Get the next upcoming reminder and clear past reminders
+     * @param cb Callback
+     */
+    getNextReminder (cb) {
+        var self = this;
+
+        //  First remove any expired reminders
+        self._removeFromCollection('reminderQueue', {
+            time: {
+                $lte: moment().toISOString()
+            }
+        }, function (err, numRemoved) {
+            if (err) {
+                cb(err);
+            } else {
+                //  Get all reminders and sort
+                self._getFromCollectionSorted(
+                    'reminderQueue',
+                    {},
+                    { time: 1 },
+                    function (err, docs) {
+                        //  Return earliest reminder
+                        cb(err, docs[0]);
+                    }
+                );
+            }
+        });
+    }
+
+    /**
+     * Get random Media based on params
+     * @param params Params to match against
+     * @param cb Callback
+     */
+    getMedia (params, cb) {
+        var self = this;
+
+        //  Process custom params
+        if (params.custom) {
+            params = self._processCustomParams(params, {
+                viewedMin: {
+                    name: 'timesViewed',
+                    op: '$gte',
+                    value: params.custom.viewedMin
+                },
+                viewedMax: {
+                    name: 'timesViewed',
+                    op: '$lte',
+                    value: params.custom.viewedMax
+                },
+                beforeDate: {
+                    name: 'timeTaken',
+                    op: '$lte',
+                    value: params.custom.beforeDate
+                },
+                afterDate: {
+                    name: 'timeTaken',
+                    op: '$gte',
+                    value: params.custom.afterDate
+                }
+            });
+        }
+
+        self._getFromCollection('media', params, cb);
+    }
+
+    /**
+     * Get the next upcoming event that matches the params
+     * @param type EVENT_TYPE
+     * @param params Params to match against
+     * @param cb Callback
+     */
+    getNextEvent (type, params, cb) {
+        var self = this;
+
+        //  Get all events and sort
+        var date = {};
+        date[dateKeys[type].default] = 1;
+        self._getFromCollectionSorted(
+            type,
+            params,
+            date,
+            function (err, docs) {
+                cb(err, docs ? docs[0] : null);
+            }
+        );
+    }
+
+    /**
+     * Get voice line matching params
+     * @param params Params to match against
+     * @param cb Callback
+     */
+    getVoice (params, cb) {
+        var self = this;
+
+        self._getFromCollection('voice', params, cb);
+    }
+
+    /**
+     * Adds a new doc to specified collection
+     * @param collection The collection to add to
+     * @param docType Which doc type within the collection
+     * @param params Params of the doc to add
+     * @param cb Callback
+     */
+    addToCollection (collection, docType, params, cb) {
+        var self = this;
+
+        //  First check if is collection requiring special checks
+        switch (collection) {
+            case 'shopping':
+                self.addShopping(params, cb);
+                return;
+            case 'reminderQueue':
+                self.addReminder(params, cb);
+                return;
+        }
+
+        //  Verify correct params
+        var repeatRemind = minKeys[collection] && minKeys[collection][docType] &&
+            minKeys[collection][docType].repeatInfo && minKeys[collection][docType].reminderInfo;
+        self._verifyCollectionParams(collection, docType, params, repeatRemind);
     }
 
     /**
@@ -259,7 +488,7 @@ class Model {
      * @param params Params of reminder
      * @param cb Callback
      */
-    queueReminder (params, cb) {
+    addReminder (params, cb) {
         var self = this;
 
         //  Verify correct params
@@ -377,6 +606,8 @@ class Model {
         });
     }
 
+
+
     /*  PRIVATE METHODS ******************************************************************************************/
 
     /**
@@ -389,72 +620,6 @@ class Model {
      */
     _verifyCollectionParams (collection, docType, params, repeatRemind, cb) {
         var self = this;
-
-        var dateKeys = {
-            'appointment': {
-                'default': ['time']
-            },
-            'medication': {
-                'default': ['lastTaken']
-            },
-            'exercise': {
-                'default': ['time']
-            },
-            'bill': {
-                'default': ['time']
-            },
-            'reminderQueue': {
-                'default': ['time']
-            },
-            'people': {
-                'default': ['birthday']
-            },
-            'entertainment': {
-                'default': ['dateAdded', 'lastUsed']
-            },
-            'voice': {
-                'default': ['dateAdded']
-            }
-        };
-        var minKeys = {
-            'appointment': {
-                'default': ['type', 'people', 'time', 'repeatInfo', 'reminderInfo']
-            },
-            'medication': {
-                'default': ['name', 'type', 'lastTaken', 'repeatInfo', 'reminderInfo']
-            },
-            'exercise': {
-                'default': ['name', 'time', 'repeatInfo', 'reminderInfo']
-            },
-            'shopping': {
-                'default': ['toPurchase', 'repeatInfo', 'reminderInfo'],
-                'record': ['date', 'itemsBought']
-            },
-            'stock': {
-                'default': ['type', 'name', 'amount']
-            },
-            'bill': {
-                'default': ['type', 'amount', 'time', 'repeatInfo', 'reminderInfo']
-            },
-            'reminderQueue': {
-                'default': ['type', 'event', 'time']
-            },
-            'patient': {
-                'default': ['type', 'subType', 'value']
-            },
-            'people': {
-                'default': ['first', 'last', 'relationship', 'closeness', 'birthday']
-            },
-            'media': {
-                'default': ['type', 'occasion', 'file', 'timesViewed']
-            },
-            'entertainment': {
-                'default': ['type', 'dateAdded', 'lastUsed', 'rating']
-            },
-            'voice': {
-                'default': ['type', 'line', 'dateAdded']
-            }
-        };
 
         //  Verify collection/docType args
         if (!minKeys[collection]) {
@@ -524,6 +689,26 @@ class Model {
     }
 
     /**
+     * Processes custom params passed to different functions
+     * @param params The params with custom params
+     * @param map Map of custom param to query
+     * @return object containing the correct nosql queries
+     */
+    _processCustomParams (params, map) {
+        //  Go through each custom key
+        Object.keys(params.custom).forEach(function (customKey) {
+            if (!map[customKey]) {
+                return;
+            }
+            //  Map key to correct op/value
+            params[map[customKey].name] = params[map[customKey].name] || {};
+            params[map[customKey].name][map[customKey].op] = map[customKey].value;
+        });
+        delete params.custom;
+        return params;
+    }
+
+    /**
      * Getter for Collection
      * @param collection Collection name
      * @param params Params to match against
@@ -533,6 +718,19 @@ class Model {
         var self = this;
         self._db[collection].find(params, cb);
     }
+
+    /**
+     * Getter for Collection that sorts results
+     * @param collection Collection name
+     * @param params Params to match against
+     * @param sortBy What to sort by
+     * @param cb Callback
+     */
+    _getFromCollectionSorted (collection, params, sortBy, cb) {
+        var self = this;
+        self._db[collection].find(params).sort(sortBy).exec(cb);
+    }
+
     /**
      * Adder for Collection
      * @param collection Collection name
@@ -543,6 +741,7 @@ class Model {
         var self = this;
         self._db[collection].insert(docs, cb);
     }
+
     /**
      * Remover for Collection
      * @param collection Collection name
@@ -553,6 +752,7 @@ class Model {
         var self = this;
         self._db[collection].remove(params, { multi: true }, cb);
     }
+
     /**
      * Updater for Collection
      * @param collection Collection name

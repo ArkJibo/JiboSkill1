@@ -10,6 +10,7 @@ var moment = require('moment');
 var Model = require('../../src/model');
 var Errors = require('../../src/errors');
 var expect = require('chai').expect;
+var util = require('../../src/util');
 
 describe('Model', function () {
     var model = new Model();
@@ -333,6 +334,340 @@ describe('Model', function () {
         });
     });
 
+    describe('#getPatientInfo()', function () {
+        it('should get docs matching the params', function (done) {
+            //  Manually insert docs
+            model._db.patient.insert([{
+                type: 'health',
+                subType: 'weight'
+            }, {
+                type: 'health',
+                subType: 'blood pressure'
+            }], function (err, docs) {
+                assert.equal(err, null);
+
+                model.getPatientInfo({
+                    type: 'health'
+                }, function (err, docs) {
+                    assert.equal(err, null);
+                    assert.equal(docs.length, 2);
+                    done();
+                });
+            });
+        });
+
+        it('should get no docs matching the params', function (done) {
+            //  Manually insert docs
+            model._db.patient.insert([{
+                type: 'health'
+            }, {
+                random: 'health'
+            }], function (err, docs) {
+                assert.equal(err, null);
+
+                model.getPatientInfo({
+                    random: 'param'
+                }, function (err, docs) {
+                    assert.equal(err, null);
+                    assert.equal(docs.length, 0);
+                    done();
+                });
+            });
+        });
+    });
+
+    describe('#getPersonInfo()', function () {
+        it('should get person without custom params', function (done) {
+            //  Manually insert docs
+            model._db.people.insert([{
+                first: 'Eric',
+                last: 'Dong'
+            }, {
+                first: 'Dave',
+                last: 'Barnhart'
+            }], function (err, docs) {
+                assert.equal(err, null);
+
+                model.getPersonInfo({
+                    first: 'Eric'
+                }, function (err, docs) {
+                    assert.equal(err, null);
+                    assert.equal(docs.length, 1);
+                    done();
+                });
+            });
+        });
+
+        it('should get person with custom params', function (done) {
+            //  Manually insert docs
+            model._db.people.insert([{
+                first: 'Eric',
+                closeness: 4
+            }, {
+                first: 'Eric',
+                closeness: 8
+            }, {
+                first: 'Dave',
+                closeness: 10
+            }, {
+                first: 'Dave',
+                closeness: 2
+            }], function (err, docs) {
+                assert.equal(err, null);
+
+                var funcs = [
+                    function (cb) {
+                        model.getPersonInfo({
+                            first: 'Eric',
+                            custom: { closenessMin: 5 }
+                        }, function (err, docs) {
+                            assert.equal(err, null);
+                            assert.equal(docs.length, 1);
+                            cb();
+                        });
+                    },
+                    function (cb) {
+                        model.getPersonInfo({
+                            custom: { closenessMax: 8 }
+                        }, function (err, docs) {
+                            assert.equal(err, null);
+                            assert.equal(docs.length, 3);
+                            cb();
+                        });
+                    }
+                ];
+
+                async.parallel(funcs, function () {
+                    done();
+                });
+            });
+        });
+    });
+
+    describe('#getNextReminder()', function () {
+        it('should get correct reminder', function (done) {
+            //  Manually insert
+            model._db.reminderQueue.insert([{
+                name: 'event1',
+                time: moment().add(1, 'hour').toISOString()
+            }, {
+                name: 'event2',
+                time: moment().add(2, 'hour').toISOString()
+            }, {
+                name: 'event3',
+                time: moment().add(3, 'hour').toISOString()
+            }, {
+                name: 'event4',
+                time: moment().add(4, 'hour').toISOString()
+            }], function (err, docs) {
+                assert.equal(err, null);
+
+                model.getNextReminder(function (err, doc) {
+                    assert.equal(err, null);
+                    assert.equal(doc.name, 'event1');
+                    done();
+                });
+            });
+        });
+
+        it('should get correct reminder and clear past reminders', function (done) {
+            //  Manually insert
+            model._db.reminderQueue.insert([{
+                name: 'event1',
+                time: moment().subtract(2, 'hour').toISOString()
+            }, {
+                name: 'event2',
+                time: moment().subtract(1, 'hour').toISOString()
+            }, {
+                name: 'event3',
+                time: moment().add(1, 'hour').toISOString()
+            }], function (err, docs) {
+                assert.equal(err, null);
+
+                model.getNextReminder(function (err, doc) {
+                    assert.equal(err, null);
+                    assert.equal(doc.name, 'event3');
+                    done();
+                });
+            });
+        });
+
+        it('should not break if no reminders', function (done) {
+            model.getNextReminder(function (err, doc) {
+                assert.equal(err, null);
+                assert.equal(doc, undefined);
+                done();
+            });
+        });
+    });
+
+    describe('#getMedia()', function () {
+        it('should get media without custom params', function (done) {
+            //  Manually insert
+            model._db.media.insert([{
+                type: 'photo',
+                name: 'bottle'
+            }, {
+                type: 'photo',
+                name: 'lamp'
+            }], function (err, docs) {
+                assert.equal(err, null);
+
+                model.getMedia({
+                    type: 'photo'
+                }, function (err, docs) {
+                    assert.equal(err, null);
+                    assert.equal(docs.length, 2);
+                    done();
+                });
+            });
+        });
+
+        it('should get media with viewed custom params', function (done) {
+            //  Manually insert
+            model._db.media.insert([{
+                type: 'photo1',
+                timesViewed: 1
+            }, {
+                type: 'photo2',
+                timesViewed: 2
+            }, {
+                type: 'photo3',
+                timesViewed: 3
+            }, {
+                type: 'photo4',
+                timesViewed: 4
+            }], function (err, docs) {
+                assert.equal(err, null);
+
+                model.getMedia({
+                    custom: {
+                        viewedMin: 2
+                    }
+                }, function (err, docs) {
+                    assert.equal(err, null);
+                    assert.equal(docs.length, 3);
+
+                    model.getMedia({
+                        custom: {
+                            viewedMin: 2,
+                            viewedMax: 3
+                        }
+                    }, function (err, docs) {
+                        assert.equal(err, null);
+                        assert.equal(docs.length, 2);
+                        done();
+                    });
+                });
+            });
+        });
+
+        it('should get media with timeTaken custom params', function (done) {
+            //  Manually insert
+            model._db.media.insert([{
+                type: 'photo1',
+                timeTaken: moment().add(1, 'days').toISOString()
+            }, {
+                type: 'photo2',
+                timeTaken: moment().add(2, 'days').toISOString()
+            }, {
+                type: 'photo3',
+                timeTaken: moment().add(3, 'days').toISOString()
+            }, {
+                type: 'photo4',
+                timeTaken: moment().add(4, 'days').toISOString()
+            }], function (err, docs) {
+                assert.equal(err, null);
+
+                model.getMedia({
+                    custom: {
+                        beforeDate: moment().add(3, 'days').toISOString()
+                    }
+                }, function (err, docs) {
+                    assert.equal(err, null);
+                    assert.equal(docs.length, 3);
+
+                    model.getMedia({
+                        custom: {
+                            beforeDate: moment().add(4, 'days').toISOString(),
+                            afterDate: moment().add(2, 'days').toISOString()
+                        }
+                    }, function (err, docs) {
+                        assert.equal(err, null);
+                        assert.equal(docs.length, 2);
+                        done();
+                    });
+                });
+            });
+        });
+    });
+
+    describe('#getNextEvent()', function () {
+        it('should get correct event', function (done) {
+            //  Manually insert
+            model._db.appointment.insert([{
+                name: 'fire',
+                value: 1,
+                time: moment().add(1, 'days').toISOString()
+            }, {
+                name: 'fire',
+                value: 2,
+                time: moment().add(2, 'days').toISOString()
+            }, {
+                name: 'water',
+                value: 3,
+                time: moment().add(3, 'days').toISOString()
+            }, {
+                name: 'water',
+                value: 4,
+                time: moment().add(4, 'days').toISOString()
+            }], function (err, docs) {
+                assert.equal(err, null);
+
+                model.getNextEvent(util.EVENT_TYPE.APPOINTMENT, {
+                    name: 'water'
+                }, function (err, doc) {
+                    assert.equal(err, null);
+                    assert.equal(doc.name, 'water');
+                    assert.equal(doc.value, 3);
+                    done();
+                });
+            });
+        });
+
+        it('should not break for empty collection', function (done) {
+            model.getNextEvent(util.EVENT_TYPE.APPOINTMENT, {}, function (err, doc) {
+                assert.equal(err, null);
+                assert.equal(doc, null);
+                done();
+            });
+        });
+    });
+
+    describe('#getVoice()', function () {
+        it('should get correct voice', function (done) {
+            //  Manually insert
+            model._db.voice.insert([{
+                type: 'greeting',
+                line: 'hihihihihi'
+            }, {
+                type: 'goodbye',
+                line: 'byebyebyebyebye'
+            }], function (err, docs) {
+                assert.equal(err, null);
+
+                model.getVoice({
+                    type: 'greeting'
+                }, function (err, docs) {
+                    assert.equal(err, null);
+                    assert.equal(docs.length, 1);
+                    assert.equal(docs[0].line, 'hihihihihi');
+                    done();
+                });
+            });
+        });
+    });
+
     describe('#addAppointment()', function () {
         it('should add appointment', function (done) {
             model.addAppointment({
@@ -570,7 +905,7 @@ describe('Model', function () {
         });
     });
 
-    describe('#queueReminder()', function () {
+    describe('#addReminder()', function () {
         it('should add new Reminder to collection', function (done) {
             //  Manually insert an event
             model._db.appointment.insert({
@@ -578,7 +913,7 @@ describe('Model', function () {
             }, function (err, docs) {
                 assert.equal(err, null);
 
-                model.queueReminder({
+                model.addReminder({
                     type: 'appointment',
                     event: {
                         _id: 'alksdjhfi3j928htger'
@@ -593,7 +928,7 @@ describe('Model', function () {
         });
 
         it('should fail for missing key', function (done) {
-            model.queueReminder({
+            model.addReminder({
                 why: 'tho'
             }, function (err, doc) {
                 assert.equal(err, Errors.KEY_MISSING);
@@ -609,7 +944,7 @@ describe('Model', function () {
             }, function (err, docs) {
                 assert.equal(err, null);
 
-                model.queueReminder({
+                model.addReminder({
                     type: 'appointment',
                     event: {
                         _id: 'such a terrible id'

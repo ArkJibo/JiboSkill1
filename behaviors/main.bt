@@ -46,16 +46,16 @@
         "options": {
             "exec": [
                 "() => {",
-                "  var apiKey = 'dD0SwsmXOxU24hPNPwIuWH'; //change [API_KEY] to your key found at https://ifttt.com/maker",
-                "  var IFTTTMaker = require('iftttmaker')(apiKey);",
-                "  var action = 'jibo_send_email'; //change [EVENT_NAME] to your Maker Event (e.g. jibo_send_mail)",
+                "    var apiKey = 'dD0SwsmXOxU24hPNPwIuWH'; //change [API_KEY] to your key found at https://ifttt.com/maker",
+                "    var IFTTTMaker = require('iftttmaker')(apiKey);",
+                "    var action = 'jibo_send_email'; //change [EVENT_NAME] to your Maker Event (e.g. jibo_send_mail)",
                 "",
-                "  // Promise",
-                "  IFTTTMaker.send(action, 'hi', 'Im jibo here').then(function () {",
-                "    console.log('Request was sent');",
-                "  }).catch(function (error) {",
-                "    console.log('The request could not be sent:', error);",
-                "  });",
+                "    // Promise",
+                "    IFTTTMaker.send(action, 'hi', 'Im jibo here').then(function () {",
+                "        console.log('Request was sent');",
+                "    }).catch(function (error) {",
+                "        console.log('The request could not be sent:', error);",
+                "    });",
                 "}"
             ]
         },
