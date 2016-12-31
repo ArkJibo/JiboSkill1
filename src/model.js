@@ -302,7 +302,7 @@ class Model {
 
     /**
      * Get the next upcoming event that matches the params
-     * @param type EVENT_TYPE
+     * @param type JIBO_EVENT_TYPE
      * @param params Params to match against
      * @param cb Callback
      */

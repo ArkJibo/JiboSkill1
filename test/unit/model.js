@@ -624,7 +624,7 @@ describe('Model', function () {
             }], function (err, docs) {
                 assert.equal(err, null);
 
-                model.getNextEvent(util.EVENT_TYPE.APPOINTMENT, {
+                model.getNextEvent(util.JIBO_EVENT_TYPE.APPOINTMENT, {
                     name: 'water'
                 }, function (err, doc) {
                     assert.equal(err, null);
@@ -636,7 +636,7 @@ describe('Model', function () {
         });
 
         it('should not break for empty collection', function (done) {
-            model.getNextEvent(util.EVENT_TYPE.APPOINTMENT, {}, function (err, doc) {
+            model.getNextEvent(util.JIBO_EVENT_TYPE.APPOINTMENT, {}, function (err, doc) {
                 assert.equal(err, null);
                 assert.equal(doc, null);
                 done();
