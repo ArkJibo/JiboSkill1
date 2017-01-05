@@ -56,6 +56,7 @@ class EmailClient {
     constructor () {
         var self = this;
 
+        //  Get Imap obj and check emails
         getFreshImap(function (err, imap) {
             if (err) {
                 console.log(err);
@@ -78,12 +79,8 @@ class EmailClient {
                 //  Parses all unseen emails and marks them as read
                 var collectUnseenEmails = function () {
                     self.imap.search(['UNSEEN'], function (err, results) {
-                        if (err) {
-                            throw err;
-                        }
-
-                        if (results.length === 0) {
-                            console.log('NO NEW MAIL');
+                        if (err || results.length === 0) {
+                            console.log(err || 'NO NEW MAIL');
                             return;
                         }
 
@@ -97,6 +94,7 @@ class EmailClient {
                             var parser = new MailParser();
                             parser.on('end', function (mail) {
                                 //  Done parsing
+                                //  TODO: logic for sending event to event bus goes here
                                 console.log('NEW MAIL!');
                                 console.log(
                                     'From: ' + mail.from[0].address + '\n' +
@@ -115,10 +113,6 @@ class EmailClient {
                             msg.once('end', function () {
                                 parser.end();
                             });
-                        });
-
-                        f.once('error', function (err) {
-                            console.log('Fetch error: ' + err);
                         });
                     });
                 };

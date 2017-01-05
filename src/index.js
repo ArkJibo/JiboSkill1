@@ -4,8 +4,8 @@ let jibo = require ('jibo');
 let Status = jibo.bt.Status;
 
 var Model = require('./model');
-var BookKeeper = require('./workers/book-keeper');
-var EmailClient = require('./workers/email-client');
+var BookKeeper = require('./core/book-keeper');
+var EmailClient = require('./core/email-client');
 var Util = require('./util');
 
 jibo.init('face', function(err) {
