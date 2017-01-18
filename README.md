@@ -1,8 +1,6 @@
-# Simple Jibo + IFTTT Sample
+# Jibo Caregiver
 
-This is a simple Jibo skill that helps you connect IFTTT to the Jibo SDK
-
-Original Code and sample posted by [Michael Rodriguez](https://github.com/michaelrod77) in this [forum post](https://discuss.jibo.com/t/how-to-connect-jibo-sdk-to-ifttt-maker-recipe-in-10-minutes/1305)
+Jibo skill for aiding those with Alzheimer's in their day to day lives 
 
 ## Prerequisities
 
@@ -20,6 +18,13 @@ npm install --global grunt-cli
 npm install --global jibo-cli
 ```
 
+## Testing
+
+### Unit tests
+
+We use the Mocha testing framework to write and run unit tests. All functionality **must** have a matching unit test.  
+Documentation can be found [here](https://mochajs.org/)
+
 ## Execution
 
 This project uses the [Grunt](http://gruntjs.com/) task runner  
@@ -32,3 +37,8 @@ This project uses the [Grunt](http://gruntjs.com/) task runner
 When trying to run the simulator, it might not be able to find 'pixi.js/bin/pixi.js'  
 &nbsp;&nbsp;&nbsp;&nbsp;If this happens, the pixi.js folder structure might have been installed as node_modules/pixi.js/dist/pixi.js  
 &nbsp;&nbsp;&nbsp;&nbsp;My fix for this issue has been to change the name of 'dist' to 'bin'  
+
+### Archived
+
+#### IFTTT
+Original Code and sample posted by [Michael Rodriguez](https://github.com/michaelrod77) in this [forum post](https://discuss.jibo.com/t/how-to-connect-jibo-sdk-to-ifttt-maker-recipe-in-10-minutes/1305)
