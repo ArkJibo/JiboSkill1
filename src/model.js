@@ -75,6 +75,7 @@ var minKeys = {
 };
 
 class Model {
+    
     constructor () {
         var self = this;
 
