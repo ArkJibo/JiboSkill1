@@ -4,10 +4,13 @@ var fs = require('fs');
 
 //  Use node-imap to receive emails
 var Imap = require('imap');
-var inspect = require('../util').inspect;
+var inspect = require('./util').inspect;
 
 //  Use mailparser to parse emails
 var MailParser = require('mailparser').MailParser;
+
+// Use nodemailer to send emails 
+var NodeMailer = require('nodemailer');
 
 //  TODO: there's probably a better way to be error resilient than creating a new Imap
 function getFreshImap (cb) {
@@ -44,7 +47,18 @@ function getFreshImap (cb) {
                     keepalive: true
                 });
 
-                cb(null, imap);
+                var email = creds.email;
+
+                //construct config necessary to send email 
+                var smtpConfig = { 
+                    service: "Gmail",
+                    auth:{
+                        user: creds.email,
+                        pass: creds.password
+                    }
+                };
+
+                cb(null, imap, email, smtpConfig);
             } catch (e) {
                 cb(e);
             }
@@ -53,18 +67,47 @@ function getFreshImap (cb) {
 }
 
 class EmailClient {
-    constructor () {
+    //constructor takes the full name of user as String
+    constructor (name) {
         var self = this;
+        self.name = name; 
 
         //  Get Imap obj and check emails
-        getFreshImap(function (err, imap) {
+        getFreshImap(function (err, imap, email, smtpConfig) {
             if (err) {
                 console.log(err);
             } else {
                 self.imap = imap;
-                self._checkEmails();
+                self.email = email;
+                self.transporter = NodeMailer.createTransport(smtpConfig);
+                self._checkEmails();  
             }
         });
+    }
+
+    _sendEmail(toName, toEmail, subject, text){
+        var self = this;
+
+        var fromText =  '"' + self.name + '" <' + self.email + '>'; 
+        var toText = '"' + toName + '" <' + toEmail + '>'; 
+
+        //mail component
+        var mailOptions = {
+            from: fromText, // sender address
+            to: toText, // list of receivers
+            subject: subject, // Subject line
+            text: text // plaintext body
+            //html: '<b>Hello world ?</b>' // html body
+        }
+
+        // send mail with defined transport object
+        self.transporter.sendMail(mailOptions, function(error, info){
+            if(error){
+                return console.log(error);
+            }
+            console.log('Message sent: ' + info.response);
+        });
+
     }
 
     _checkEmails () {
