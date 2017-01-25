@@ -1,6 +1,7 @@
 'use strict';
 
 var fs = require('fs');
+var path = require('path');
 
 //  Use node-imap to receive emails
 var Imap = require('imap');
@@ -80,23 +81,36 @@ class EmailClient {
                 self.imap = imap;
                 self.email = email;
                 self.transporter = NodeMailer.createTransport(smtpConfig);
-                self._checkEmails();  
+                self._checkEmails();
+                
             }
         });
     }
 
-    _sendEmail(toName, toEmail, subject, text){
+    //attachments as array of Path
+    _sendEmail(toName, toEmail, subject, text, attachments){
         var self = this;
 
         var fromText =  '"' + self.name + '" <' + self.email + '>'; 
         var toText = '"' + toName + '" <' + toEmail + '>'; 
+
+        var files = [];
+        if (attachments != null){
+            for (var i = 0; i < attachments.length; i++){
+                
+                files.push({
+                    path: attachments[i]
+                });
+            }
+        }
 
         //mail component
         var mailOptions = {
             from: fromText, // sender address
             to: toText, // list of receivers
             subject: subject, // Subject line
-            text: text // plaintext body
+            text: text, // plaintext body
+            attachments: files //attachments
             //html: '<b>Hello world ?</b>' // html body
         }
 
