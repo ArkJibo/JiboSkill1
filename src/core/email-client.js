@@ -5,7 +5,7 @@ var path = require('path');
 
 //  Use node-imap to receive emails
 var Imap = require('imap');
-var inspect = require('./util').inspect;
+var inspect = require('../util').inspect;
 
 //  Use mailparser to parse emails
 var MailParser = require('mailparser').MailParser;
