@@ -1,4 +1,5 @@
 /* global describe, it, before, beforeEach, after, afterEach */
+/*jshint expr: true*/
 
 'use strict';
 
@@ -11,23 +12,45 @@ var Model = require('../../src/model');
 var Errors = require('../../src/errors');
 var expect = require('chai').expect;
 var util = require('../../src/util');
+var _ = require('lodash');
 
 describe('Model', function () {
     var model = new Model();
     var tempFiles = {
-        'appointment': './db/test-appointment.db',
-        'bill': './db/test-bill.db',
-        'entertainment': './db/test-entertainment.db',
-        'exercise': './db/test-exercise.db',
-        'media': './db/test-media.db',
-        'medication': './db/test-medication.db',
+        'events': './db/test-events.db',
+        'reminderQueue': './db/test-reminderQueue.db',
+        'inventory': './db/test-inventory.db',
         'patient': './db/test-patient.db',
         'people': './db/test-people.db',
-        'reminderQueue': './db/test-reminderQueue.db',
-        'shopping': './db/test-shopping.db',
-        'stock': './db/test-stock.db',
+        'media': './db/test-media.db',
+        'entertainment': './db/test-entertainment.db',
         'voice': './db/test-voice.db'
     };
+
+    var cleanup = function (cb) {
+        //  Delete the temp db files
+        var funcs = [];
+        Object.keys(tempFiles).forEach(function (key) {
+            funcs.push(function(cb) {
+                fs.unlink(tempFiles[key], function (err) {
+                    expect(err).to.not.exist;
+                    cb();
+                });
+            });
+        });
+        async.parallel(funcs, cb);
+    };
+
+    //  For cleaning up on ctrl+c
+    var rl = require('readline').createInterface({
+        input: process.stdin,
+        output: process.stdout
+    });
+    rl.on('SIGINT', function () {
+        cleanup(function () {
+            process.exit();
+        });
+    });
 
     before(function (done) {
         //  Use temporary db files for testing
@@ -43,298 +66,244 @@ describe('Model', function () {
     });
 
     after(function () {
-        //  Delete the temp db files
-        Object.keys(tempFiles).forEach(key => {
-            fs.unlink(tempFiles[key], err => {
-                assert.equal(err, null);
-            });
+        cleanup(function () {
+            console.log('\n***NOTE: YOU CAN IGNORE THE DEPRECATION WARNING ABOUT ISO FORMAT');
         });
-
-        console.log('\n***NOTE: YOU CAN IGNORE THE DEPRECATION WARNING ABOUT ISO FORMAT');
     });
 
     afterEach(function (done) {
         //  Clear contents of each temp db file
         var functions = [];
-        Object.keys(tempFiles).forEach(key => {
+        Object.keys(tempFiles).forEach(function (key) {
             functions.push(function (cb) {
                 model._db[key].remove({}, { multi: true }, cb);
             });
         });
+
         async.parallel(functions, function (err, results) {
             assert.equal(err, null);
             done();
         });
     });
 
+    var presentTime = moment().format();
     var mockRepeat = {
         type: 'winning',
-        startTime: moment().format(),
-        endTime: moment().format(),
+        startTime: presentTime,
+        endTime: presentTime,
         interval: '10w'
     };
     var mockRemind = {
         type: 'much winning',
         numReminders: 1337,
         interval: '3y',
-        startTime: moment().format()
+        startTime: presentTime
     };
 
     describe('#getTodaySchedule()', function () {
-        var insertManual = function (data, cb) {
-            var doc = {};
-            doc[data.time] = data.timeValue;
-
-            model._db[data.col].insert(doc, function (err, doc) {
-                cb(err);
+        before(function (done) {
+            //  Insert test set of events
+            model._db.events.insert([{
+                type: 'fun',
+                time: moment(presentTime).toISOString()
+            }, {
+                type: 'run',
+                time: moment(presentTime).add(2, 'hours').toISOString()
+            }, {
+                type: 'bun',
+                time: moment(presentTime).add(8, 'hours').toISOString()
+            }, {
+                type: 'stun',
+                time: moment(presentTime).add(2, 'days').toISOString()
+            }, {
+                type: 'hun',
+                time: moment(presentTime).subtract(1, 'days').toISOString()
+            }], function (err, docs) {
+                expect(err).to.not.exist;
+                done();
             });
-        };
+        });
 
-        it('should return 4 events for today', function (done) {
-            //  Manually insert the docs
-            var funcs = [
-                insertManual.bind(null, {
-                    time: 'time',
-                    timeValue: moment().toISOString(),
-                    col: 'appointment'
-                }),
-                insertManual.bind(null, {
-                    time: 'lastTaken',
-                    timeValue: moment().toISOString(),
-                    col: 'medication'
-                }),
-                insertManual.bind(null, {
-                    time: 'time',
-                    timeValue: moment().toISOString(),
-                    col: 'exercise'
-                }),
-                insertManual.bind(null, {
-                    time: 'time',
-                    timeValue: moment().toISOString(),
-                    col: 'bill'
-                })
-            ];
+        it('should return 3 events for today', function (done) {
+            model.getTodaySchedule(function (err, docs) {
+                expect(err).to.not.exist;
+                expect(docs.length).to.equal(3);
+                expect(docs[0].type).to.equal('fun');
+                expect(docs[1].type).to.equal('run');
+                expect(docs[2].type).to.equal('bun');
+                done();
+            });
+        });
+    });
 
-            //  Run inserts in parallel
-            async.parallel(funcs, function (err, cb) {
-                assert.equal(err, null);
+    describe('#getNextMatchingEvent()', function () {
+        it('should get correct event', function (done) {
+            //  Manually insert
+            model._db.events.insert([{
+                type: 'appointment',
+                name: 'fire',
+                value: 1,
+                time: moment(presentTime).add(1, 'days').toISOString()
+            }, {
+                type: 'medical',
+                name: 'fire',
+                value: 2,
+                time: moment(presentTime).add(2, 'days').toISOString()
+            }, {
+                type: 'appointment',
+                name: 'water',
+                value: 3,
+                time: moment(presentTime).add(3, 'days').toISOString()
+            }, {
+                type: 'appointment',
+                name: 'water',
+                value: 4,
+                time: moment(presentTime).add(4, 'days').toISOString()
+            }], function (err, docs) {
+                expect(err).to.not.exist;
 
-                model.getTodaySchedule(function (err, docs) {
-                    assert.equal(err, null);
-                    assert.equal(docs.length, 4);
+                model.getNextMatchingEvent(util.JIBO_EVENT_TYPE.APPOINTMENT, {
+                    name: 'water'
+                }, function (err, doc) {
+                    expect(err).to.not.exist;
+                    expect(doc.name).to.equal('water');
+                    expect(doc.value).to.equal(3);
                     done();
                 });
             });
         });
 
-        it('should return 2 events for today because other 2 are not today', function (done) {
-            //  Manually insert the docs
-            var funcs = [
-                insertManual.bind(null, {
-                    time: 'time',
-                    timeValue: moment().toISOString(),
-                    col: 'appointment'
-                }),
-                insertManual.bind(null, {
-                    time: 'lastTaken',
-                    timeValue: moment().toISOString(),
-                    col: 'medication'
-                }),
-                insertManual.bind(null, {
-                    time: 'time',
-                    timeValue: moment().add(1, 'days').toISOString(),   //  Should not be returned because tomorrow
-                    col: 'exercise'
-                }),
-                insertManual.bind(null, {
-                    time: 'time',
-                    timeValue: moment().subtract(1, 'days').toISOString(),  //  Should not be returned because yesterday
-                    col: 'bill'
-                })
-            ];
-
-            //  Run inserts in parallel
-            async.parallel(funcs, function (err, cb) {
-                assert.equal(err, null);
-
-                model.getTodaySchedule(function (err, docs) {
-                    assert.equal(err, null);
-                    assert.equal(docs.length, 2);
-                    done();
-                });
+        it('should not break for invalid collection', function (done) {
+            model.getNextMatchingEvent('garbage', {}, function (err, doc) {
+                expect(err).to.not.exist;
+                expect(doc).to.not.exist;
+                done();
             });
         });
+    });
 
-        it('should return 2 events for today because other 2 collections are empty', function (done) {
-            //  Manually insert the docs
-            var funcs = [
-                insertManual.bind(null, {
-                    time: 'time',
-                    timeValue: moment().toISOString(),
-                    col: 'appointment'
-                }),
-                insertManual.bind(null, {
-                    time: 'lastTaken',
-                    timeValue: moment().toISOString(),
-                    col: 'medication'
-                })
-            ];
+    describe('#getMatchingEvents()', function () {
+        it('should return proper matches', function (done) {
+            //  Manually insert docs
+            model._db.events.insert([{
+                type: 'hype',
+                level: 25
+            }, {
+                type: 'hype',
+                level: 10
+            }, {
+                type: 'pipe',
+                level: 30
+            }], function (err, docs) {
+                expect(err).to.not.exist;
 
-            //  Run inserts in parallel
-            async.parallel(funcs, function (err, cb) {
-                assert.equal(err, null);
-
-                model.getTodaySchedule(function (err, docs) {
-                    assert.equal(err, null);
-                    assert.equal(docs.length, 2);
-                    done();
-                });
-            });
-        });
-
-        it('should return 0 events because all are not today', function (done) {
-            //  Manually insert the docs
-            var funcs = [
-                insertManual.bind(null, {
-                    time: 'time',
-                    timeValue: moment().subtract(1, 'days').toISOString(),  //  Should not be returned because yesterday
-                    col: 'appointment'
-                }),
-                insertManual.bind(null, {
-                    time: 'lastTaken',
-                    timeValue: moment().add(1, 'days').toISOString(),   //  Should not be returned because tomorrow
-                    col: 'medication'
-                }),
-                insertManual.bind(null, {
-                    time: 'time',
-                    timeValue: moment().add(1, 'days').toISOString(),   //  Should not be returned because tomorrow
-                    col: 'exercise'
-                }),
-                insertManual.bind(null, {
-                    time: 'time',
-                    timeValue: moment().subtract(1, 'days').toISOString(),  //  Should not be returned because yesterday
-                    col: 'bill'
-                })
-            ];
-
-            //  Run inserts in parallel
-            async.parallel(funcs, function (err) {
-                assert.equal(err, null);
-
-                model.getTodaySchedule(function (err, docs) {
-                    assert.equal(err, null);
-                    assert.equal(docs.length, 0);
+                model.getMatchingEvents({
+                    type: 'hype',
+                    _custom: [{
+                        key: 'level',
+                        op: 'gt',
+                        value: 20
+                    }]
+                }, function (err, docs) {
+                    expect(err).to.not.exist;
+                    expect(docs.length).to.equal(1);
+                    expect(docs[0].type).to.equal('hype');
+                    expect(docs[0].level).to.equal(25);
                     done();
                 });
             });
         });
     });
 
-    describe('#getEntertainment()', function () {
-        beforeEach(function (done) {
-            //  Push in some entertainment docs
-            var entertain = function (params, cb) {
-                model._db.entertainment.insert(params, function (err, docs) {
-                    cb(err);
-                });
-            };
+    describe('#getNextReminder()', function () {
+        it('should get correct reminder', function (done) {
+            //  Manually insert
+            model._db.reminderQueue.insert([{
+                name: 'event1',
+                time: moment(presentTime).add(1, 'hour').toISOString()
+            }, {
+                name: 'event2',
+                time: moment(presentTime).add(2, 'hour').toISOString()
+            }, {
+                name: 'event3',
+                time: moment(presentTime).add(3, 'hour').toISOString()
+            }, {
+                name: 'event4',
+                time: moment(presentTime).add(4, 'hour').toISOString()
+            }], function (err, docs) {
+                expect(err).to.not.exist;
 
-            var funcs = [];
-            var extra = ['typeA', 'typeB'];
-            for (var i = 0; i < 10; i++) {
-                funcs.push(entertain.bind(null, {
-                    extra: extra[Math.floor(i / 5)],
-                    rating: i,
-                    lastUsed: moment().subtract(i, 'days').toISOString()
-                }));
-            }
-
-            async.parallel(funcs, function (err) {
-                assert.equal(err, null);
-                done();
-            });
-        });
-
-
-        it('should get entertainment with no custom params', function (done) {
-            model.getEntertainment({
-                extra: 'typeA'
-            }, function (err, doc, numDocs) {
-                assert.equal(err, null);
-                assert.equal(doc.extra, 'typeA');
-                assert.equal(numDocs, 5);
-                done();
-            });
-        });
-
-        it('should get entertainment with rating custom params', function (done) {
-            model.getEntertainment({
-                extra: 'typeB',
-                custom: {
-                    ratingMin: 6
-                }
-            }, function (err, doc, numDocs) {
-                assert.equal(err, null);
-                assert.equal(doc.extra, 'typeB');
-                expect(doc.rating).to.be.at.least(6);
-                assert.equal(numDocs, 4);
-
-                model.getEntertainment({
-                    extra: 'typeB',
-                    custom: {
-                        ratingMin: 6,
-                        ratingMax: 8
-                    }
-                }, function (err, doc, numDocs) {
-                    assert.equal(err, null);
-                    assert.equal(doc.extra, 'typeB');
-                    expect(doc.rating).to.be.at.least(6).and.at.most(8);
-                    assert.equal(numDocs, 3);
+                model.getNextReminder(function (err, doc) {
+                    expect(err).to.not.exist;
+                    expect(doc.name).to.equal('event1');
                     done();
                 });
             });
         });
 
-        it('should get entertainment with lastUsed custom params', function (done) {
-            model.getEntertainment({
-                extra: 'typeA',
-                custom: {
-                    notUsedSince: moment().subtract(3, 'days').toISOString()
-                }
-            }, function (err, doc, numDocs) {
-                assert.equal(err, null);
-                assert.equal(doc.extra, 'typeA');
-                assert.equal(numDocs, 2);
+        it('should get correct reminder and clear past reminders', function (done) {
+            //  Manually insert
+            model._db.reminderQueue.insert([{
+                name: 'event1',
+                time: moment(presentTime).subtract(2, 'days').toISOString()
+            }, {
+                name: 'event2',
+                time: moment(presentTime).subtract(1, 'days').toISOString()
+            }, {
+                name: 'event3',
+                time: moment(presentTime).add(1, 'days').toISOString()
+            }], function (err, docs) {
+                expect(err).to.not.exist;
 
-                model.getEntertainment({
-                    extra: 'typeB',
-                    custom: {
-                        notUsedSince: moment().subtract(6, 'days').toISOString(),
-                        notUsedBefore: moment().subtract(8, 'days').toISOString()
-                    }
-                }, function (err, doc, numDocs) {
-                    assert.equal(err, null);
-                    assert.equal(doc.extra, 'typeB');
-                    assert.equal(numDocs, 2);
+                model.getNextReminder(function (err, doc) {
+                    expect(err).to.not.exist;
+                    expect(doc.name).to.equal('event3');
                     done();
                 });
             });
         });
 
-        it('should get entertainment with both lastUsed and rating', function (done) {
-            model.getEntertainment({
-                custom: {
-                    notUsedSince: moment().subtract(4, 'days').toISOString(),
-                    ratingMin: 7
-                }
-            }, function (err, doc, numDocs) {
+        it('should not break if no reminders', function (done) {
+            model.getNextReminder(function (err, doc) {
                 assert.equal(err, null);
-                assert.equal(numDocs, 3);
+                assert.equal(doc, undefined);
                 done();
             });
         });
     });
 
-    describe('#getPatientInfo()', function () {
+    describe('#getMatchingInventory()', function () {
+        it('should get correct item', function (done) {
+            model._db.inventory.insert([{
+                type: 'box',
+                amount: 10
+            }, {
+                type: 'big box',
+                amount: 4
+            }, {
+                type: 'mini box',
+                amount: 7
+            }], function (err, docs) {
+                expect(err).to.not.exist;
+
+                model.getMatchingInventory({
+                    _custom: [{
+                        key: 'amount',
+                        op: 'lte',
+                        value: 4
+                    }]
+                }, function (err, docs) {
+                    expect(err).to.not.exist;
+                    expect(docs.length).to.equal(1);
+                    expect(docs[0].type).to.equal('big box');
+                    expect(docs[0].amount).to.equal(4);
+                    done();
+                });
+            });
+        });
+    });
+
+    describe('#getMatchingPatientInfo()', function () {
         it('should get docs matching the params', function (done) {
             //  Manually insert docs
             model._db.patient.insert([{
@@ -346,7 +315,7 @@ describe('Model', function () {
             }], function (err, docs) {
                 assert.equal(err, null);
 
-                model.getPatientInfo({
+                model.getMatchingPatientInfo({
                     type: 'health'
                 }, function (err, docs) {
                     assert.equal(err, null);
@@ -365,7 +334,7 @@ describe('Model', function () {
             }], function (err, docs) {
                 assert.equal(err, null);
 
-                model.getPatientInfo({
+                model.getMatchingPatientInfo({
                     random: 'param'
                 }, function (err, docs) {
                     assert.equal(err, null);
@@ -376,7 +345,7 @@ describe('Model', function () {
         });
     });
 
-    describe('#getPersonInfo()', function () {
+    describe('#getMatchingPersonInfo()', function () {
         it('should get person without custom params', function (done) {
             //  Manually insert docs
             model._db.people.insert([{
@@ -386,13 +355,13 @@ describe('Model', function () {
                 first: 'Dave',
                 last: 'Barnhart'
             }], function (err, docs) {
-                assert.equal(err, null);
+                expect(err).to.not.exist;
 
-                model.getPersonInfo({
+                model.getMatchingPersonInfo({
                     first: 'Eric'
                 }, function (err, docs) {
-                    assert.equal(err, null);
-                    assert.equal(docs.length, 1);
+                    expect(err).to.not.exist;
+                    expect(docs.length).to.equal(1);
                     done();
                 });
             });
@@ -413,25 +382,33 @@ describe('Model', function () {
                 first: 'Dave',
                 closeness: 2
             }], function (err, docs) {
-                assert.equal(err, null);
+                expect(err).to.not.exist;
 
                 var funcs = [
                     function (cb) {
-                        model.getPersonInfo({
+                        model.getMatchingPersonInfo({
                             first: 'Eric',
-                            custom: { closenessMin: 5 }
+                            _custom: [{
+                                key: 'closeness',
+                                op: 'gte',
+                                value: 5
+                            }]
                         }, function (err, docs) {
-                            assert.equal(err, null);
-                            assert.equal(docs.length, 1);
+                            expect(err).to.not.exist;
+                            expect(docs.length).to.equal(1);
                             cb();
                         });
                     },
                     function (cb) {
-                        model.getPersonInfo({
-                            custom: { closenessMax: 8 }
+                        model.getMatchingPersonInfo({
+                            _custom: [{
+                                key: 'closeness',
+                                op: 'lte',
+                                value: 8
+                            }]
                         }, function (err, docs) {
-                            assert.equal(err, null);
-                            assert.equal(docs.length, 3);
+                            expect(err).to.not.exist;
+                            expect(docs.length).to.equal(3);
                             cb();
                         });
                     }
@@ -444,64 +421,7 @@ describe('Model', function () {
         });
     });
 
-    describe('#getNextReminder()', function () {
-        it('should get correct reminder', function (done) {
-            //  Manually insert
-            model._db.reminderQueue.insert([{
-                name: 'event1',
-                time: moment().add(1, 'hour').toISOString()
-            }, {
-                name: 'event2',
-                time: moment().add(2, 'hour').toISOString()
-            }, {
-                name: 'event3',
-                time: moment().add(3, 'hour').toISOString()
-            }, {
-                name: 'event4',
-                time: moment().add(4, 'hour').toISOString()
-            }], function (err, docs) {
-                assert.equal(err, null);
-
-                model.getNextReminder(function (err, doc) {
-                    assert.equal(err, null);
-                    assert.equal(doc.name, 'event1');
-                    done();
-                });
-            });
-        });
-
-        it('should get correct reminder and clear past reminders', function (done) {
-            //  Manually insert
-            model._db.reminderQueue.insert([{
-                name: 'event1',
-                time: moment().subtract(2, 'hour').toISOString()
-            }, {
-                name: 'event2',
-                time: moment().subtract(1, 'hour').toISOString()
-            }, {
-                name: 'event3',
-                time: moment().add(1, 'hour').toISOString()
-            }], function (err, docs) {
-                assert.equal(err, null);
-
-                model.getNextReminder(function (err, doc) {
-                    assert.equal(err, null);
-                    assert.equal(doc.name, 'event3');
-                    done();
-                });
-            });
-        });
-
-        it('should not break if no reminders', function (done) {
-            model.getNextReminder(function (err, doc) {
-                assert.equal(err, null);
-                assert.equal(doc, undefined);
-                done();
-            });
-        });
-    });
-
-    describe('#getMedia()', function () {
+    describe('#getMatchingMedia()', function () {
         it('should get media without custom params', function (done) {
             //  Manually insert
             model._db.media.insert([{
@@ -511,13 +431,13 @@ describe('Model', function () {
                 type: 'photo',
                 name: 'lamp'
             }], function (err, docs) {
-                assert.equal(err, null);
+                expect(err).to.not.exist;
 
-                model.getMedia({
+                model.getMatchingMedia({
                     type: 'photo'
                 }, function (err, docs) {
-                    assert.equal(err, null);
-                    assert.equal(docs.length, 2);
+                    expect(err).to.not.exist;
+                    expect(docs.length).to.equal(2);
                     done();
                 });
             });
@@ -538,24 +458,31 @@ describe('Model', function () {
                 type: 'photo4',
                 timesViewed: 4
             }], function (err, docs) {
-                assert.equal(err, null);
+                expect(err).to.not.exist;
 
-                model.getMedia({
-                    custom: {
-                        viewedMin: 2
-                    }
+                model.getMatchingMedia({
+                    _custom: [{
+                        key: 'timesViewed',
+                        op: 'gte',
+                        value: 2
+                    }]
                 }, function (err, docs) {
-                    assert.equal(err, null);
-                    assert.equal(docs.length, 3);
+                    expect(err).to.not.exist;
+                    expect(docs.length).to.equal(3);
 
-                    model.getMedia({
-                        custom: {
-                            viewedMin: 2,
-                            viewedMax: 3
-                        }
+                    model.getMatchingMedia({
+                        _custom: [{
+                            key: 'timesViewed',
+                            op: 'gte',
+                            value: 2
+                        }, {
+                            key: 'timesViewed',
+                            op: 'lte',
+                            value: 3
+                        }]
                     }, function (err, docs) {
-                        assert.equal(err, null);
-                        assert.equal(docs.length, 2);
+                        expect(err).to.not.exist;
+                        expect(docs.length).to.equal(2);
                         done();
                     });
                 });
@@ -566,35 +493,42 @@ describe('Model', function () {
             //  Manually insert
             model._db.media.insert([{
                 type: 'photo1',
-                timeTaken: moment().add(1, 'days').toISOString()
+                timeTaken: moment(presentTime).add(1, 'days').toISOString()
             }, {
                 type: 'photo2',
-                timeTaken: moment().add(2, 'days').toISOString()
+                timeTaken: moment(presentTime).add(2, 'days').toISOString()
             }, {
                 type: 'photo3',
-                timeTaken: moment().add(3, 'days').toISOString()
+                timeTaken: moment(presentTime).add(3, 'days').toISOString()
             }, {
                 type: 'photo4',
-                timeTaken: moment().add(4, 'days').toISOString()
+                timeTaken: moment(presentTime).add(4, 'days').toISOString()
             }], function (err, docs) {
-                assert.equal(err, null);
+                expect(err).to.not.exist;
 
-                model.getMedia({
-                    custom: {
-                        beforeDate: moment().add(3, 'days').toISOString()
-                    }
+                model.getMatchingMedia({
+                    _custom: [{
+                        key: 'timeTaken',
+                        op: 'lte',
+                        value: moment(presentTime).add(3, 'days').toISOString()
+                    }]
                 }, function (err, docs) {
-                    assert.equal(err, null);
-                    assert.equal(docs.length, 3);
+                    expect(err).to.not.exist;
+                    expect(docs.length).to.equal(3);
 
-                    model.getMedia({
-                        custom: {
-                            beforeDate: moment().add(4, 'days').toISOString(),
-                            afterDate: moment().add(2, 'days').toISOString()
-                        }
+                    model.getMatchingMedia({
+                        _custom: [{
+                            key: 'timeTaken',
+                            op: 'lte',
+                            value: moment(presentTime).add(4, 'days').toISOString()
+                        }, {
+                            key: 'timeTaken',
+                            op: 'gt',
+                            value: moment(presentTime).add(2, 'days').toISOString()
+                        }]
                     }, function (err, docs) {
-                        assert.equal(err, null);
-                        assert.equal(docs.length, 2);
+                        expect(err).to.not.exist;
+                        expect(docs.length).to.equal(2);
                         done();
                     });
                 });
@@ -602,49 +536,131 @@ describe('Model', function () {
         });
     });
 
-    describe('#getNextEvent()', function () {
-        it('should get correct event', function (done) {
-            //  Manually insert
-            model._db.appointment.insert([{
-                name: 'fire',
-                value: 1,
-                time: moment().add(1, 'days').toISOString()
-            }, {
-                name: 'fire',
-                value: 2,
-                time: moment().add(2, 'days').toISOString()
-            }, {
-                name: 'water',
-                value: 3,
-                time: moment().add(3, 'days').toISOString()
-            }, {
-                name: 'water',
-                value: 4,
-                time: moment().add(4, 'days').toISOString()
-            }], function (err, docs) {
-                assert.equal(err, null);
+    describe('#getMatchingEntertainment()', function () {
+        beforeEach(function (done) {
+            //  Push in some entertainment docs
+            var entertain = function (params, cb) {
+                model._db.entertainment.insert(params, function (err, docs) {
+                    cb(err);
+                });
+            };
 
-                model.getNextEvent(util.JIBO_EVENT_TYPE.APPOINTMENT, {
-                    name: 'water'
-                }, function (err, doc) {
-                    assert.equal(err, null);
-                    assert.equal(doc.name, 'water');
-                    assert.equal(doc.value, 3);
+            var funcs = [];
+            var extra = ['typeA', 'typeB'];
+            for (var i = 0; i < 10; i++) {
+                funcs.push(entertain.bind(null, {
+                    extra: extra[Math.floor(i / 5)],
+                    rating: i,
+                    lastUsed: moment(presentTime).subtract(i, 'days').toISOString()
+                }));
+            }
+
+            async.parallel(funcs, function (err) {
+                expect(err).to.not.exist;
+                done();
+            });
+        });
+
+
+        it('should get entertainment with no custom params', function (done) {
+            model.getMatchingEntertainment({
+                extra: 'typeA'
+            }, function (err, doc, numDocs) {
+                expect(err).to.not.exist;
+                expect(doc.extra).to.equal('typeA');
+                expect(numDocs).to.equal(5);
+                done();
+            });
+        });
+
+        it('should get entertainment with rating custom params', function (done) {
+            model.getMatchingEntertainment({
+                extra: 'typeB',
+                _custom: [{
+                    key: 'rating',
+                    op: 'gte',
+                    value: 6
+                }]
+            }, function (err, doc, numDocs) {
+                expect(err).to.not.exist;
+                expect(doc.extra).to.equal('typeB');
+                expect(doc.rating).to.be.at.least(6);
+                expect(numDocs).to.equal(4);
+
+                model.getMatchingEntertainment({
+                    extra: 'typeB',
+                    _custom: [{
+                        key: 'rating',
+                        op: 'gte',
+                        value: 6
+                    }, {
+                        key: 'rating',
+                        op: 'lte',
+                        value: 8
+                    }]
+                }, function (err, doc, numDocs) {
+                    expect(err).to.not.exist;
+                    expect(doc.extra).to.equal('typeB');
+                    expect(doc.rating).to.be.at.least(6).and.at.most(8);
+                    expect(numDocs).to.equal(3);
                     done();
                 });
             });
         });
 
-        it('should not break for empty collection', function (done) {
-            model.getNextEvent(util.JIBO_EVENT_TYPE.APPOINTMENT, {}, function (err, doc) {
-                assert.equal(err, null);
-                assert.equal(doc, null);
+        it('should get entertainment with lastUsed custom params', function (done) {
+            model.getMatchingEntertainment({
+                extra: 'typeA',
+                _custom: [{
+                    key: 'lastUsed',
+                    op: 'lte',
+                    value: moment(presentTime).subtract(3, 'days').toISOString()
+                }]
+            }, function (err, doc, numDocs) {
+                expect(err).to.not.exist;
+                expect(doc.extra).to.equal('typeA');
+                expect(numDocs).to.equal(2);
+
+                model.getMatchingEntertainment({
+                    extra: 'typeB',
+                    _custom: [{
+                        key: 'lastUsed',
+                        op: 'lte',
+                        value: moment(presentTime).subtract(6, 'days').toISOString()
+                    }, {
+                        key: 'lastUsed',
+                        op: 'gte',
+                        value: moment(presentTime).subtract(8, 'days').toISOString()
+                    }]
+                }, function (err, doc, numDocs) {
+                    expect(err).to.not.exist;
+                    expect(doc.extra).to.equal('typeB');
+                    expect(numDocs).to.equal(3);
+                    done();
+                });
+            });
+        });
+
+        it('should get entertainment with both lastUsed and rating', function (done) {
+            model.getMatchingEntertainment({
+                _custom: [{
+                    key: 'lastUsed',
+                    op: 'lte',
+                    value: moment(presentTime).subtract(4, 'days').toISOString()
+                }, {
+                    key: 'rating',
+                    op: 'gte',
+                    value: 7
+                }]
+            }, function (err, doc, numDocs) {
+                expect(err).to.not.exist;
+                expect(numDocs).to.equal(3);
                 done();
             });
         });
     });
 
-    describe('#getVoice()', function () {
+    describe('#getMatchingVoice()', function () {
         it('should get correct voice', function (done) {
             //  Manually insert
             model._db.voice.insert([{
@@ -654,252 +670,220 @@ describe('Model', function () {
                 type: 'goodbye',
                 line: 'byebyebyebyebye'
             }], function (err, docs) {
-                assert.equal(err, null);
+                expect(err).to.not.exist;
 
-                model.getVoice({
+                model.getMatchingVoice({
                     type: 'greeting'
                 }, function (err, docs) {
-                    assert.equal(err, null);
-                    assert.equal(docs.length, 1);
-                    assert.equal(docs[0].line, 'hihihihihi');
+                    expect(err).to.not.exist;
+                    expect(docs.length).to.equal(1);
+                    expect(docs[0].line).to.equal('hihihihihi');
                     done();
                 });
             });
         });
     });
 
-    describe('#addAppointment()', function () {
-        it('should add appointment', function (done) {
-            model.addAppointment({
-                type: 'dentist',
-                people: ['Eddie Redmayne', 'Sarah Zhou'],
-                time: moment().format(),
-                repeatInfo: mockRepeat,
-                reminderInfo: mockRemind
-            }, function (err, doc) {
-                assert.equal(err, null);
-                expect(doc).to.include.keys('type', 'people', 'time', 'repeatInfo', 'reminderInfo');
-                done();
-            });
-        });
+    describe('#updateCollection()', function () {
+        beforeEach(function (done) {
+            //  Clear collection and manually insert docs to update
+            model._db.events.remove({}, {
+                multi: true
+            }, function (err) {
+                expect(err).to.not.exist;
 
-        it('should fail to add appointment because missing key', function (done) {
-            model.addAppointment({
-                garbage: 'garbage'
-            }, function (err, doc) {
-                assert.equal(err, Errors.KEY_MISSING);
-                assert.equal(doc, null);
-                done();
-            });
-        });
-
-        it('should fail to add appointment because invalid date', function (done) {
-            model.addAppointment({
-                type: 'dentist',
-                people: ['Eddie Redmayne', 'Sarah Zhou'],
-                time: 'nonsense',
-                repeatInfo: mockRepeat,
-                reminderInfo: mockRemind
-            }, function (err, doc) {
-                assert.equal(err, Errors.INVALID_DATE);
-                assert.equal(doc, null);
-                done();
-            });
-        });
-    });
-
-    describe('#addMedication()', function () {
-        it('should add medication', function (done) {
-            model.addMedication({
-                name: 'Donald Trump',
-                type: 'makeyougreatagain',
-                lastTaken: moment().format(),
-                repeatInfo: mockRepeat,
-                reminderInfo: mockRemind
-            }, function (err, doc) {
-                assert.equal(err, null);
-                expect(doc).to.include.keys('name', 'type', 'lastTaken', 'repeatInfo', 'reminderInfo');
-                done();
-            });
-        });
-
-        it('should fail to add medication because missing key', function (done) {
-            model.addMedication({
-                garbage: 'garbage'
-            }, function (err, doc) {
-                assert.equal(err, Errors.KEY_MISSING);
-                assert.equal(doc, null);
-                done();
-            });
-        });
-
-        it('should fail to add medication because invalid date', function (done) {
-            model.addMedication({
-                name: 'Donald Trump',
-                type: 'makeyougreatagain',
-                lastTaken: 'nonsense',
-                repeatInfo: mockRepeat,
-                reminderInfo: mockRemind
-            }, function (err, doc) {
-                assert.equal(err, Errors.INVALID_DATE);
-                assert.equal(doc, null);
-                done();
-            });
-        });
-    });
-
-    describe('#addExercise()', function () {
-        it('should add exercise', function (done) {
-            model.addExercise({
-                name: 'Go running',
-                time: moment().format(),
-                repeatInfo: mockRepeat,
-                reminderInfo: mockRemind
-            }, function (err, doc) {
-                assert.equal(err, null);
-                expect(doc).to.include.keys('name', 'repeatInfo', 'reminderInfo');
-                done();
-            });
-        });
-
-        it('should fail to add exercise because missing key', function (done) {
-            model.addExercise({
-                garbage: 'garbage'
-            }, function (err, doc) {
-                assert.equal(err, Errors.KEY_MISSING);
-                assert.equal(doc, null);
-                done();
-            });
-        });
-
-        it('should fail to add exercise because invalid date', function (done) {
-            model.addExercise({
-                name: 'Go running',
-                time: 'nonsense',
-                repeatInfo: mockRepeat,
-                reminderInfo: mockRemind
-            }, function (err, doc) {
-                assert.equal(err, Errors.INVALID_DATE);
-                assert.equal(doc, null);
-                done();
-            });
-        });
-    });
-
-    describe('#addShopping()', function () {
-        it('should add shopping list', function (done) {
-            model.addShopping({
-                toPurchase: ['things', 'more things'],
-                repeatInfo: mockRepeat,
-                reminderInfo: mockRemind
-            }, function (err, doc) {
-                assert.equal(err, null);
-                expect(doc).to.include.keys('toPurchase', 'repeatInfo', 'reminderInfo');
-                done();
-            });
-        });
-
-        it('should add shopping record', function (done) {
-            model.addShopping({
-                date: moment().format(),
-                itemsBought: [{
-                    name: 'eraser',
-                    amount: 12
+                model._db.events.insert([{
+                    key1: 'a',
+                    key2: 1,
+                    key3: 'dummy'
                 }, {
-                    name: 'scissors',
-                    amount: 3
-                }]
-            }, function (err, doc) {
-                assert.equal(err, null);
-                expect(doc).to.include.keys('date', 'itemsBought');
-                done();
-            });
-        });
-
-        it('should fail because bad list', function (done) {
-            model.addShopping({
-                toPurchase: ['things', 'more things'],
-                repeatInfo: 'wat'
-            }, function (err, doc) {
-                assert.equal(err, Errors.KEY_MISSING);
-                assert.equal(doc, null);
-                done();
-            });
-        });
-
-        it('should fail because bad record', function (done) {
-            model.addShopping({
-                date: 'fake time'
-            }, function (err, doc) {
-                assert.equal(err, Errors.KEY_MISSING);
-                assert.equal(doc, null);
-                done();
-            });
-        });
-
-        it('should fail because bad itemsBought', function (done) {
-            model.addShopping({
-                date: 'fake time',
-                itemsBought: [{
-                    name: 'ketchup',
-                    amount: 7
+                    key1: 'a',
+                    key2: 5,
+                    key3: 'dummy'
                 }, {
-                    name: 'eyemask',
-                    wat: 'wat'
+                    key1: 'b',
+                    key2: 3,
+                    key3: 'dummy'
+                }, {
+                    key1: 'b',
+                    key2: 7,
+                    key3: 'dummy'
+                }], function (err, docs) {
+                    expect(err).to.not.exist;
+                    done();
+                });
+            });
+        });
+
+        it('should update by replacing matches with new doc', function (done) {
+            model.updateCollection(util.JIBO_COLLECTION_TYPE.EVENTS, {
+                key1: 'a'
+            }, {
+                replace1: 'z',
+                replace2: 42
+            }, function (err, numAffected, docs) {
+                expect(err).to.not.exist;
+                expect(numAffected).to.equal(2);
+                expect(docs[0].replace1).to.equal('z');
+                expect(docs[0].replace2).to.equal(42);
+                expect(docs[1].replace1).to.equal('z');
+                expect(docs[1].replace2).to.equal(42);
+                expect(docs[0].key1).to.not.exist;
+                expect(docs[0].key2).to.not.exist;
+                expect(docs[1].key1).to.not.exist;
+                expect(docs[1].key2).to.not.exist;
+                done();
+            });
+        });
+
+        it('should update by performing ops', function (done) {
+            model.updateCollection(util.JIBO_COLLECTION_TYPE.EVENTS, {
+                _custom: [{
+                    key: 'key2',
+                    op: 'gt',
+                    value: 1
                 }]
-            }, function (err, doc) {
-                assert.equal(err, Errors.KEY_MISSING);
-                assert.equal(doc, null);
+            }, {
+                _set: {
+                    key1: 'z',
+                },
+                _unset: {
+                    key3: true
+                },
+                _inc: {
+                    key2: 5
+                },
+                thisShouldBeIgnored: true
+            }, function (err, numAffected, docs) {
+                expect(err).to.not.exist;
+                expect(numAffected).to.equal(3);
+                docs.forEach(function (doc) {
+                    expect(doc.key1).to.equal('z');
+                    expect(doc.key3).to.not.exist;
+                    expect([8, 10, 12]).to.include(doc.key2);
+                });
                 done();
             });
         });
     });
 
-    describe('#addToStock()', function () {
-        it('should add to Stock collection', function (done) {
-            model.addToStock({
-                type: 'technology',
-                name: 'iphone',
-                amount: 20
-            }, function (err, doc) {
-                assert.equal(err, null);
-                expect(doc).to.include.keys('type', 'name', 'amount');
-                done();
+    describe('#removeFromCollection()', function () {
+        it('should remove all of the specified key', function (done) {
+            model._db.events.insert([{
+                key: 'value'
+            }, {
+                key: 'value'
+            }, {
+                key: 'value'
+            }, {
+                key: 'SUPER VALUE'
+            }], function (err, docs) {
+                expect(err).to.not.exist;
+
+                model.removeFromCollection(util.JIBO_COLLECTION_TYPE.EVENTS, {
+                    key: 'value'
+                }, function (err, numRemoved) {
+                    expect(err).to.not.exist;
+                    expect(numRemoved).to.equal(3);
+                    done();
+                });
             });
         });
 
-        it('should fail to add Stock', function (done) {
-            model.addToStock({
-                random: 'nonsense'
-            }, function (err, doc) {
-                assert.equal(err, Errors.KEY_MISSING);
-                assert.equal(doc, null);
-                done();
+        it('should remove all the things', function (done) {
+            model._db.events.insert([{
+                key: 'value'
+            }, {
+                key: 'value'
+            }, {
+                key: 'value'
+            }, {
+                key: 'SUPER VALUE'
+            }], function (err, docs) {
+                expect(err).to.not.exist;
+
+                model.removeFromCollection(util.JIBO_COLLECTION_TYPE.EVENTS, {}, function (err, numRemoved) {
+                    expect(err).to.not.exist;
+                    expect(numRemoved).to.equal(4);
+                    done();
+                });
             });
         });
     });
 
-    describe('#addBill()', function () {
-        it('should add to Bill collection', function (done) {
-            model.addBill({
-                type: 'electricity',
-                amount: '150',
-                time: moment().format(),
+    describe('#addNewEvent()', function () {
+        it('should succeed with correct params', function (done) {
+            model.addNewEvent({
+                type: 'appointment',
+                subtype: 'medical',
+                time: presentTime,
                 repeatInfo: mockRepeat,
                 reminderInfo: mockRemind
-            }, function (err, doc) {
-                assert.equal(err, null);
-                expect(doc).to.include.keys('type', 'amount', 'repeatInfo', 'reminderInfo');
+            }, function (err) {
+                expect(err).to.not.exist;
                 done();
             });
         });
 
-        it('should fail to add to Bill', function (done) {
-            model.addBill({
-                random: 'nonsense'
-            }, function (err, doc) {
-                assert.equal(err, Errors.KEY_MISSING);
-                assert.equal(doc, null);
+        it('verification error should be passed along correctly', function (done) {
+            model.addNewEvent({
+                random: 'value'
+            }, function (err) {
+                expect(err).to.equal(Errors.KEY_MISSING);
+                done();
+            });
+        });
+    });
+
+    describe('#addNewInventory()', function () {
+        var supply = {
+            type: 'supply',
+            subtype: 'grocery',
+            name: 'broccoli',
+            amount: 5
+        };
+        var record = {
+            type: 'record',
+            date: presentTime,
+            purchased: [{
+                name: 'broccoli',
+                amount: 5
+            }]
+        };
+
+        it('should succeed with correct params for supply', function (done) {
+            model.addNewInventory(supply, function (err, supp) {
+                expect(err).to.not.exist;
+                expect(supp).to.exist;
+                done();
+            });
+        });
+
+        it('should succeed with correct params for record', function (done) {
+            model.addNewInventory(record, function (err, supp) {
+                expect(err).to.not.exist;
+                expect(supp).to.exist;
+                done();
+            });
+        });
+
+        it('handle incorrect item type', function (done) {
+            model.addNewInventory({
+                type: 'wat'
+            }, function (err, supp) {
+                expect(err).to.equal(Errors.INVALID_INVENTORY);
+                expect(supp).to.not.exist;
+                done();
+            });
+        });
+
+        it('verification error should be passed along correctly', function (done) {
+            model.addNewInventory({
+                type: 'record',
+                random: 'value'
+            }, function (err, supp) {
+                expect(err).to.equal(Errors.KEY_MISSING);
+                expect(supp).to.not.exist;
                 done();
             });
         });
@@ -908,20 +892,19 @@ describe('Model', function () {
     describe('#addReminder()', function () {
         it('should add new Reminder to collection', function (done) {
             //  Manually insert an event
-            model._db.appointment.insert({
+            model._db.events.insert({
                 _id: 'alksdjhfi3j928htger'
             }, function (err, docs) {
-                assert.equal(err, null);
+                expect(err).to.not.exist;
 
                 model.addReminder({
-                    type: 'appointment',
+                    type: 'events',
                     event: {
                         _id: 'alksdjhfi3j928htger'
                     },
-                    time: moment().format()
+                    time: presentTime
                 }, function (err, doc) {
-                    assert.equal(err, null);
-                    expect(doc).to.include.keys('type', 'event', 'time');
+                    expect(err).to.not.exist;
                     done();
                 });
             });
@@ -931,28 +914,28 @@ describe('Model', function () {
             model.addReminder({
                 why: 'tho'
             }, function (err, doc) {
-                assert.equal(err, Errors.KEY_MISSING);
-                assert.equal(doc, null);
+                expect(err).to.equal(Errors.KEY_MISSING);
+                expect(doc).to.not.exist;
                 done();
             });
         });
 
         it('should fail for bad _id', function (done) {
             //  Manually insert an event
-            model._db.appointment.insert({
+            model._db.events.insert({
                 _id: 'alksdjhfi3j928htger'
             }, function (err, docs) {
-                assert.equal(err, null);
+                expect(err).to.not.exist;
 
                 model.addReminder({
-                    type: 'appointment',
+                    type: 'events',
                     event: {
                         _id: 'such a terrible id'
                     },
-                    time: moment().format()
+                    time: presentTime
                 }, function (err, doc) {
-                    assert.equal(err, Errors.BAD_DOC_ID);
-                    assert.equal(doc, null);
+                    expect(err).to.equal(Errors.BAD_DOC_ID);
+                    expect(doc).to.not.exist;
                     done();
                 });
             });
@@ -966,8 +949,7 @@ describe('Model', function () {
                 subType: 'game',
                 value: 'hopscotch'
             }, function (err, doc) {
-                assert.equal(err, null);
-                expect(doc).to.include.keys('type', 'subType', 'value');
+                expect(err).to.not.exist;
                 done();
             });
         });
@@ -976,8 +958,8 @@ describe('Model', function () {
             model.addPatientInfo({
                 random: 'nonsense'
             }, function (err, doc) {
-                assert.equal(err, Errors.KEY_MISSING);
-                assert.equal(doc, null);
+                expect(err).to.equal(Errors.KEY_MISSING);
+                expect(doc).to.not.exist;
                 done();
             });
         });
@@ -990,10 +972,9 @@ describe('Model', function () {
                 last: 'Dong',
                 relationship: 'bff forever',
                 closeness: 10,
-                birthday: moment().format()
+                birthday: presentTime
             }, function (err, doc) {
-                assert.equal(err, null);
-                expect(doc).to.include.keys('first', 'last', 'relationship', 'closeness', 'birthday');
+                expect(err).to.not.exist;
                 done();
             });
         });
@@ -1002,8 +983,8 @@ describe('Model', function () {
             model.addPerson({
                 utter: 'nonsense'
             }, function (err, doc) {
-                assert.equal(err, Errors.KEY_MISSING);
-                assert.equal(doc, null);
+                expect(err).to.equal(Errors.KEY_MISSING);
+                expect(doc).to.not.exist;
                 done();
             });
         });
@@ -1017,8 +998,7 @@ describe('Model', function () {
                 file: 'media/music/banana.mp3',
                 timesViewed: 0
             }, function (err, doc) {
-                assert.equal(err, null);
-                expect(doc).to.include.keys('type', 'occasion', 'file', 'timesViewed');
+                expect(err).to.not.exist;
                 done();
             });
         });
@@ -1027,8 +1007,8 @@ describe('Model', function () {
             model.addMedia({
                 utter: 'nonsense'
             }, function (err, doc) {
-                assert.equal(err, Errors.KEY_MISSING);
-                assert.equal(doc, null);
+                expect(err).to.equal(Errors.KEY_MISSING);
+                expect(doc).to.not.exist;
                 done();
             });
         });
@@ -1038,12 +1018,11 @@ describe('Model', function () {
         it('should add new entertainment', function (done) {
             model.addEntertainment({
                 type: 'riddle',
-                dateAdded: moment().format(),
-                lastUsed: moment().format(),
+                dateAdded: presentTime,
+                lastUsed: presentTime,
                 rating: 2
             }, function (err, doc) {
-                assert.equal(err, null);
-                expect(doc).to.include.keys('type', 'dateAdded', 'lastUsed', 'rating');
+                expect(err).to.not.exist;
                 done();
             });
         });
@@ -1052,8 +1031,8 @@ describe('Model', function () {
             model.addEntertainment({
                 not: 'entertaining'
             }, function (err, doc) {
-                assert.equal(err, Errors.KEY_MISSING);
-                assert.equal(doc, null);
+                expect(err).to.equal(Errors.KEY_MISSING);
+                expect(doc).to.not.exist;
                 done();
             });
         });
@@ -1064,10 +1043,9 @@ describe('Model', function () {
             model.addVoiceLine({
                 type: 'greeting',
                 line: 'Greetings adventurer!',
-                dateAdded: moment().format()
+                dateAdded: presentTime
             }, function (err, doc) {
-                assert.equal(err, null);
-                expect(doc).to.include.keys('type', 'line', 'dateAdded');
+                expect(err).to.not.exist;
                 done();
             });
         });
@@ -1076,52 +1054,102 @@ describe('Model', function () {
             model.addVoiceLine({
                 bad: 'voice'
             }, function (err, doc) {
-                assert.equal(err, Errors.KEY_MISSING);
-                assert.equal(doc, null);
+                expect(err).to.equal(Errors.KEY_MISSING);
+                expect(doc).to.not.exist;
                 done();
             });
         });
     });
 
     describe('#_verifyCollectionParams()', function () {
+        it('should pass all checks and succeed', function (done) {
+            model._verifyCollectionParams('events', 'default', {
+                type: 'appointment',
+                subtype: 'medical',
+                time: presentTime,
+                repeatInfo: mockRepeat,
+                reminderInfo: mockRemind
+            }, function (err, params) {
+                expect(err).to.not.exist;
+
+                var asIso = moment(presentTime).toISOString();
+                expect(params.time).to.equal(asIso);
+                expect(params.repeatInfo.startTime).to.equal(asIso);
+                expect(params.repeatInfo.endTime).to.equal(asIso);
+                expect(params.reminderInfo.startTime).to.equal(asIso);
+                done();
+            });
+        });
+
+        it('should fail because bad date', function (done) {
+            model._verifyCollectionParams('events', 'default', {
+                time: 'winning'
+            }, function (err, params) {
+                expect(err).to.equal(Errors.INVALID_DATE);
+                expect(params).to.not.exist;
+                done();
+            });
+        });
+
+        it('should fail because keys missing', function (done) {
+            model._verifyCollectionParams('events', 'default', {
+                type: 'winning'
+            }, function (err, params) {
+                expect(err).to.equal(Errors.KEY_MISSING);
+                expect(params).to.not.exist;
+                done();
+            });
+        });
+
         it('should fail because bad collection', function (done) {
-            model._verifyCollectionParams('mouse', 'default', {}, true, function (err) {
-                assert.equal(err, Errors.INVALID_COLLECTION);
+            model._verifyCollectionParams('mouse', 'default', {}, function (err, params) {
+                expect(err).to.equal(Errors.INVALID_COLLECTION);
+                expect(params).to.not.exist;
                 done();
             });
         });
 
         it('should fail because bad docType', function (done) {
-            model._verifyCollectionParams('appointment', 'badbadbad', {}, true, function (err) {
-                assert.equal(err, Errors.INVALID_DOCTYPE);
+            model._verifyCollectionParams('events', 'badbadbad', {}, function (err) {
+                expect(err).to.equal(Errors.INVALID_DOCTYPE);
                 done();
             });
         });
     });
 
-    describe('#_checkForKeys()', function () {
-        it('should be successful match', function (done) {
-            assert.equal(model._checkForKeys({
-                a: 'a',
-                b: 'b',
-                c: 'c'
-            }, ['a', 'b', 'c']), true);
+    describe('#_dateCheckAndConvert()', function () {
+        it('should pass with correct dates', function (done) {
+            var ret = model._dateCheckAndConvert({
+                'time': presentTime,
+                'dateAdded': presentTime,
+                'random': 'value',
+                'nested': {
+                    'birthday': presentTime,
+                    'bird': 'word'
+                }
+            });
+
+            expect(ret.time).to.equal(moment(presentTime).toISOString());
+            expect(ret.dateAdded).to.equal(moment(presentTime).toISOString());
+            expect(ret.nested.birthday).to.equal(moment(presentTime).toISOString());
+            expect(ret.random).to.equal('value');
+            expect(ret.nested.bird).to.equal('word');
             done();
         });
 
-        it('should be unsuccessful match', function (done) {
-            assert.equal(model._checkForKeys({
-                a: 'a',
-                b: 'b',
-                c: 'c'
-            }, ['b', 'c', 'd']), false);
+        it('should fail with invalid dates', function (done) {
+            var ret = model._dateCheckAndConvert({
+                'time': 'invalid'
+            });
+
+            expect(ret).to.be.null;
             done();
         });
     });
 
     describe('#_addToCollection()', function () {
         it('should be able to add single doc', function (done) {
-            model._addToCollection('appointment', {
+            model._addToCollection('events', {
                 hi: 'hi'
             }, function (err, doc) {
                 assert.equal(err, null);
@@ -1131,7 +1159,7 @@ describe('Model', function () {
         });
 
         it('should be able to add multiple docs', function (done) {
-            model._addToCollection('appointment', [
+            model._addToCollection('events', [
                 { how: 'are' },
                 { you: 'doing' }
             ], function (err, docs) {
@@ -1142,19 +1170,45 @@ describe('Model', function () {
         });
     });
 
+    describe('#_processCustomMatchingParams()', function () {
+        it('should correctly convert params to NeDB logic', function (done) {
+            var params = model._processCustomMatchingParams({
+                chick: 'fil a',
+                _custom: [{
+                    key: 'power',
+                    op: 'gt',
+                    value: 9000
+                }, {
+                    key: 'life',
+                    op: 'lte',
+                    value: 42
+                }]
+            });
+
+            expect(params.chick).to.equal('fil a');
+            expect(params._custom).to.not.exist;
+            expect(params.$and.length).to.equal(2);
+            expect(params.$and[0].power).to.exist;
+            expect(params.$and[0].power.$gt).to.equal(9000);
+            expect(params.$and[1].life).to.exist;
+            expect(params.$and[1].life.$lte).to.equal(42);
+            done();
+        });
+    });
+
     describe('#_getFromCollection()', function () {
         it('should get single doc from collection', function (done) {
             //  Manually insert a doc to test on
-            model._db.appointment.insert({
+            model._db.events.insert({
                 type: 'hype'
             }, function (err, docs) {
-                assert.equal(err, null);
+                expect(err).to.not.exist;
 
-                model._getFromCollection('appointment', {
+                model._getFromCollection('events', {
                     type: 'hype'
                 }, function (err, docs) {
-                    assert.equal(err, null);
-                    assert.equal(docs.length, 1);
+                    expect(err).to.not.exist;
+                    expect(docs.length).to.equal(1);
                     done();
                 });
             });
@@ -1162,19 +1216,19 @@ describe('Model', function () {
 
         it('should get multiple docs from collection', function (done) {
             //  Manually insert two docs to test on
-            model._db.appointment.insert([{
+            model._db.events.insert([{
                 type: 'hype'
             }, {
                 type: 'hype',
                 level: 9000
             }], function (err, docs) {
-                assert.equal(err, null);
+                expect(err).to.not.exist;
 
-                model._getFromCollection('appointment', {
+                model._getFromCollection('events', {
                     type: 'hype'
                 }, function (err, docs) {
-                    assert.equal(err, null);
-                    assert.equal(docs.length, 2);
+                    expect(err).to.not.exist;
+                    expect(docs.length).to.equal(2);
                     done();
                 });
             });
@@ -1184,19 +1238,21 @@ describe('Model', function () {
     describe('#_removeFromCollection()', function () {
         it('should remove multiple matching docs', function (done) {
             //  Manually insert 2 docs then remove
-            model._db.appointment.insert([{
+            model._db.events.insert([{
                 type: 'hype'
             }, {
                 type: 'hype',
                 level: 9000
             }], function (err, docs) {
-                assert.equal(err, null);
+                expect(err).to.not.exist;
 
-                model._removeFromCollection('appointment', {
+                model._removeFromCollection('events', {
                     type: 'hype'
+                }, {
+                    multi: true
                 }, function (err, numRemoved) {
-                    assert.equal(err, null);
-                    assert.equal(numRemoved, 2);
+                    expect(err).to.not.exist;
+                    expect(numRemoved).to.equal(2);
                     done();
                 });
             });
@@ -1206,22 +1262,25 @@ describe('Model', function () {
     describe('#_updateInCollection()', function () {
         it('should be able to replace with doc', function (done) {
             //  Manually insert doc to update
-            model._db.appointment.insert({
+            model._db.events.insert({
                 type: 'hype'
             }, function (err, docs) {
-                assert.equal(err, null);
+                expect(err).to.not.exist;
 
-                model._updateInCollection('appointment', {
+                model._updateInCollection('events', {
                     type: 'hype'
                 }, {
                     totally: 'radically',
                     different: 'doc'
+                }, {
+                    multi: true,
+                    returnUpdatedDocs: true
                 }, function (err, numAffected, affectedDocs) {
-                    assert.equal(err, null);
-                    assert.equal(numAffected, 1);
-                    assert.equal(affectedDocs[0].totally, 'radically');
-                    assert.equal(affectedDocs[0].different, 'doc');
-                    assert.equal(affectedDocs[0].type, null);
+                    expect(err).to.not.exist;
+                    expect(numAffected).to.equal(1);
+                    expect(affectedDocs[0].totally).to.equal('radically');
+                    expect(affectedDocs[0].different).to.equal('doc');
+                    expect(affectedDocs[0].type).to.not.exist;
                     done();
                 });
             });
@@ -1229,14 +1288,14 @@ describe('Model', function () {
 
         it('should make specific update operations', function (done) {
             //  Manually insert doc to update
-            model._db.appointment.insert({
+            model._db.events.insert({
                 type: 'hype',
                 level: 8999,
                 wat: 'wat'
             }, function (err, docs) {
-                assert.equal(err, null);
+                expect(err).to.not.exist;
 
-                model._updateInCollection('appointment', {
+                model._updateInCollection('events', {
                     type: 'hype'
                 }, {
                     $set: {
@@ -1248,12 +1307,15 @@ describe('Model', function () {
                     $unset: {
                         wat: 'wat'
                     }
+                }, {
+                    multi: true,
+                    returnUpdatedDocs: true
                 }, function (err, numAffected, affectedDocs) {
-                    assert.equal(err, null);
-                    assert.equal(numAffected, 1);
-                    assert.equal(affectedDocs[0].type, 'super hype');
-                    assert.equal(affectedDocs[0].level, 9000);
-                    assert.equal(affectedDocs[0].wat, null);
+                    expect(err).to.not.exist;
+                    expect(numAffected).to.equal(1);
+                    expect(affectedDocs[0].type).to.equal('super hype');
+                    expect(affectedDocs[0].level).to.equal(9000);
+                    expect(affectedDocs[0].wat).to.not.exist;
                     done();
                 });
             });
@@ -1263,7 +1325,7 @@ describe('Model', function () {
     describe('#_clearCollection()', function () {
         it('should delete everything in collection', function (done) {
             //  Manually insert a bunch of different docs
-            model._db.appointment.insert([{
+            model._db.events.insert([{
                 cup: 'chocolate',
                 fizz: 10
             }, {
@@ -1275,11 +1337,11 @@ describe('Model', function () {
             }, {
                 lonely: 'object'
             }], function (err, docs) {
-                assert.equal(err, null);
+                expect(err).to.not.exist;
 
-                model._clearCollection('appointment', function (err, numRemoved) {
-                    assert.equal(err, null);
-                    assert.equal(numRemoved, 3);
+                model._clearCollection('events', function (err, numRemoved) {
+                    expect(err).to.not.exist;
+                    expect(numRemoved).to.equal(3);
                     done();
                 });
             });
