@@ -91,8 +91,13 @@ class EmailClient {
 
     //method to change name of user
     _changeName(name){
-        var self = this. 
+        var self = this;
         self._name = name;
+    }
+
+    _changeEmail(email){
+        var self = this;
+        self._email = email;
     }
 
     //attachments as array of Path
@@ -151,7 +156,8 @@ class EmailClient {
                 // send mail with defined transport object
                 self._transporter.sendMail(mailOptions, function(error, info){
                     if(error){
-                        return console.log(error);
+                        console.log(error);
+                        return;
                     }
                     console.log('Message sent: ' + info.response);
                 });
@@ -185,7 +191,8 @@ class EmailClient {
             // send mail with defined transport object
             self._transporter.sendMail(mailOptions, function(error, info){
                 if(error){
-                    return console.log(error);
+                    console.log(error);
+                    return;
                 }
                 console.log('Message sent: ' + info.response);
             });
