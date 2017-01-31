@@ -71,80 +71,151 @@ class EmailClient {
     //constructor takes the full name of user as String
     constructor (name) {
         var self = this;
-        self.name = name; 
+        self._name = name; 
+        self._email = "";
 
         //  Get Imap obj and check emails
         getFreshImap(function (err, imap, email, smtpConfig) {
             if (err) {
                 console.log(err);
             } else {
-                self.imap = imap;
-                self.email = email;
-                self.transporter = NodeMailer.createTransport(smtpConfig);
+                self._imap = imap;
+                self._email = email;
+                self._transporter = NodeMailer.createTransport(smtpConfig);
                 self._checkEmails();
+                
                 
             }
         });
+    }
+
+    //method to change name of user
+    _changeName(name){
+        var self = this. 
+        self._name = name;
     }
 
     //attachments as array of Path
     _sendEmail(toName, toEmail, subject, text, attachments){
         var self = this;
 
-        var fromText =  '"' + self.name + '" <' + self.email + '>'; 
-        var toText = '"' + toName + '" <' + toEmail + '>'; 
+        if (self._email == ""){
+            fs.readFile('./email.json', 'utf8', function (err, data) {
+                if (err) {
+                    cconsole.log("Error: ", err);
+                } else {
+                    try {
+                        var creds = JSON.parse(data);   //  Can throw exception
+                        
+                        var email = creds.email;
 
-        var files = [];
-        if (attachments != null){
-            for (var i = 0; i < attachments.length; i++){
-                
-                files.push({
-                    path: attachments[i]
+                        //construct config necessary to send email 
+                        var smtpConfig = { 
+                            service: "Gmail",
+                            auth:{
+                                user: creds.email,
+                                pass: creds.password
+                            }
+                        };
+
+                        self._email = email;
+                        self._transporter = NodeMailer.createTransport(smtpConfig);
+                        
+                    } catch (e) {
+                        console.log("Error: ", e);
+                    }
+                }
+
+                var fromText =  '"' + self.name + '" <' + self._email + '>'; 
+                var toText = '"' + toName + '" <' + toEmail + '>'; 
+
+                var files = [];
+                if (attachments != null){
+                    for (var i = 0; i < attachments.length; i++){
+                        
+                        files.push({
+                            path: attachments[i]
+                        });
+                    }
+                }
+
+                //mail component
+                var mailOptions = {
+                    from: fromText, // sender address
+                    to: toText, // list of receivers
+                    subject: subject, // Subject line
+                    text: text, // plaintext body
+                    attachments: files //attachments
+                }
+
+                // send mail with defined transport object
+                self._transporter.sendMail(mailOptions, function(error, info){
+                    if(error){
+                        return console.log(error);
+                    }
+                    console.log('Message sent: ' + info.response);
                 });
+
+
+            });
+        }
+        else{
+            var fromText =  '"' + self.name + '" <' + self._email + '>'; 
+            var toText = '"' + toName + '" <' + toEmail + '>'; 
+
+            var files = [];
+            if (attachments != null){
+                for (var i = 0; i < attachments.length; i++){
+                    
+                    files.push({
+                        path: attachments[i]
+                    });
+                }
             }
+
+            //mail component
+            var mailOptions = {
+                from: fromText, // sender address
+                to: toText, // list of receivers
+                subject: subject, // Subject line
+                text: text, // plaintext body
+                attachments: files //attachments
+            }
+
+            // send mail with defined transport object
+            self._transporter.sendMail(mailOptions, function(error, info){
+                if(error){
+                    return console.log(error);
+                }
+                console.log('Message sent: ' + info.response);
+            });
         }
 
-        //mail component
-        var mailOptions = {
-            from: fromText, // sender address
-            to: toText, // list of receivers
-            subject: subject, // Subject line
-            text: text, // plaintext body
-            attachments: files //attachments
-            //html: '<b>Hello world ?</b>' // html body
-        }
-
-        // send mail with defined transport object
-        self.transporter.sendMail(mailOptions, function(error, info){
-            if(error){
-                return console.log(error);
-            }
-            console.log('Message sent: ' + info.response);
-        });
+        
 
     }
 
     _checkEmails () {
         var self = this;
 
-        self.imap.on('ready', function () {
-            self.imap.openBox('INBOX', false, function (err, box) {
+        self._imap.on('ready', function () {
+            self._imap.openBox('INBOX', false, function (err, box) {
                 if (err) {
                     throw err;
                 }
 
-                //  Parses all unseen emails and marks them as read
+                //  Parses all unseen emails
                 var collectUnseenEmails = function () {
-                    self.imap.search(['UNSEEN'], function (err, results) {
+                    self._imap.search(['UNSEEN'], function (err, results) {
                         if (err || results.length === 0) {
                             console.log(err || 'NO NEW MAIL');
                             return;
                         }
 
                         //  Fetch the entire email bodies
-                        var f = self.imap.fetch(results, {
+                        var f = self._imap.fetch(results, {
                             bodies: [''],
-                            markSeen: true
+                            markSeen: false //don't mark as seen until the user actually sees it 
                         });
 
                         f.on('message', function (msg, seqno) {
@@ -178,33 +249,33 @@ class EmailClient {
                 collectUnseenEmails();
 
                 //  Listen for new mail coming in
-                self.imap.on('mail', function (newMsgs) {
+                self._imap.on('mail', function (newMsgs) {
                     collectUnseenEmails();
                 });
             });
         });
 
-        self.imap.on('error', function (err) {
+        self._imap.on('error', function (err) {
             console.log(err);
             console.log('Trying again in 10 seconds...');
-            self.imap.end();
+            self._imap.end();
 
             //  Get a new Imap to work with
             getFreshImap(function (err, imap) {
                 if (err) {
                     console.log(err);
                 } else {
-                    self.imap = imap;
+                    self._imap = imap;
 
                     //  Try again in 10 sec
                     setTimeout(function () {
-                        self.imap.connect();
+                        self._imap.connect();
                     }, 10000);
                 }
             });
         });
 
-        self.imap.connect();
+        self._imap.connect();
     }
 }
 
