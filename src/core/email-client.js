@@ -82,8 +82,6 @@ class EmailClient {
                 self._imap = imap;
                 self._email = email;
                 self._transporter = NodeMailer.createTransport(smtpConfig);
-                self._checkEmails();
-                
                 
             }
         });
