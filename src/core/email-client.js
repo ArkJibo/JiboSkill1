@@ -13,6 +13,8 @@ var MailParser = require('mailparser').MailParser;
 // Use nodemailer to send emails 
 var NodeMailer = require('nodemailer');
 
+var Q = require('q');
+
 //  TODO: there's probably a better way to be error resilient than creating a new Imap
 function getFreshImap (cb) {
     //  Get email creds from email.json
@@ -73,18 +75,39 @@ class EmailClient {
         var self = this;
         self._name = name; 
         self._email = "";
-
-        //  Get Imap obj and check emails
+        self._imap = Q.defer();
+        self._transporter = Q.defer();
+        self._status = Q.defer();
+       
         getFreshImap(function (err, imap, email, smtpConfig) {
             if (err) {
                 console.log(err);
             } else {
-                self._imap = imap;
+                self._imap.resolve(imap);
                 self._email = email;
-                self._transporter = NodeMailer.createTransport(smtpConfig);
+                self._transporter.resolve(NodeMailer.createTransport(smtpConfig));
+                self._ready = true;
+                //console.log('Completed');
                 
             }
         });
+
+    }
+
+    _loadInfo(){
+        //  Get Imap obj and check emails
+        var self = this;
+        return self._imap.promise;
+    }
+
+    _loadTransporter(){
+        var self = this; 
+        return self._transporter.promise;
+    }
+
+    _loadStatus(){
+        var self = this;
+        return self._status.promise;
     }
 
     //method to change name of user
@@ -122,7 +145,7 @@ class EmailClient {
                         };
 
                         self._email = email;
-                        self._transporter = NodeMailer.createTransport(smtpConfig);
+                        //self._transporter = NodeMailer.createTransport(smtpConfig);
                         
                     } catch (e) {
                         console.log("Error: ", e);
@@ -151,14 +174,23 @@ class EmailClient {
                     attachments: files //attachments
                 }
 
-                // send mail with defined transport object
-                self._transporter.sendMail(mailOptions, function(error, info){
-                    if(error){
-                        console.log(error);
-                        return;
-                    }
-                    console.log('Message sent: ' + info.response);
+                self._loadTransporter().done(function (transporter){
+                    self._transporter = transporter;
+
+                    // send mail with defined transport object
+                    self._transporter.sendMail(mailOptions, function(error, info){
+                        if(error){
+                            console.log(error);
+                            return;
+                        }
+                        console.log('Message sent: ' + info.response);
+                    });
                 });
+
+
+                
+
+
 
 
             });
@@ -187,12 +219,17 @@ class EmailClient {
             }
 
             // send mail with defined transport object
-            self._transporter.sendMail(mailOptions, function(error, info){
-                if(error){
-                    console.log(error);
-                    return;
-                }
-                console.log('Message sent: ' + info.response);
+            self._loadTransporter().done(function (transporter){
+                self._transporter = transporter;
+
+                // send mail with defined transport object
+                self._transporter.sendMail(mailOptions, function(error, info){
+                    if(error){
+                        console.log(error);
+                        return;
+                    }
+                    console.log('Message sent: ' + info.response);
+                });
             });
         }
 
@@ -200,87 +237,92 @@ class EmailClient {
 
     }
 
-    _checkEmails () {
+    _checkEmails (_imap) {
         var self = this;
 
-        self._imap.on('ready', function () {
-            self._imap.openBox('INBOX', false, function (err, box) {
-                if (err) {
-                    throw err;
-                }
+        self._loadInfo().done(function (imap){
+            self._imap = imap;
 
-                //  Parses all unseen emails
-                var collectUnseenEmails = function () {
-                    self._imap.search(['UNSEEN'], function (err, results) {
-                        if (err || results.length === 0) {
-                            console.log(err || 'NO NEW MAIL');
-                            return;
-                        }
+            self._imap.on('ready', function () {
+                self._imap.openBox('INBOX', false, function (err, box) {
+                    if (err) {
+                        throw err;
+                    }
 
-                        //  Fetch the entire email bodies
-                        var f = self._imap.fetch(results, {
-                            bodies: [''],
-                            markSeen: false //don't mark as seen until the user actually sees it 
-                        });
-
-                        f.on('message', function (msg, seqno) {
-                            var parser = new MailParser();
-                            parser.on('end', function (mail) {
-                                //  Done parsing
-                                //  TODO: logic for sending event to event bus goes here
-                                console.log('NEW MAIL!');
-                                console.log(
-                                    'From: ' + mail.from[0].address + '\n' +
-                                    'Subject: ' + mail.subject + '\n' +
-                                    'Body:\n' + mail.text
-                                );
+                    //  Parses all unseen emails
+                    var collectUnseenEmails = function () {
+                        self._imap.search(['UNSEEN'], function (err, results) {
+                            if (err || results.length === 0) {
+                                console.log(err || 'NO NEW MAIL');
+                                self._status.resolve("No new mail");
+                                return;
+                            }
+                            self._status.resolve("New mail");
+                            //  Fetch the entire email bodies
+                            var f = self._imap.fetch(results, {
+                                bodies: [''],
+                                markSeen: false //don't mark as seen until the user actually sees it 
                             });
 
-                            //  Write body data to parser
-                            msg.on('body', function (stream, info) {
-                                stream.on('data', function (chunk) {
-                                    parser.write(chunk.toString('utf8'));
+                            f.on('message', function (msg, seqno) {
+                                var parser = new MailParser();
+                                parser.on('end', function (mail) {
+                                    //  Done parsing
+                                    //  TODO: logic for sending event to event bus goes here
+                                    console.log('NEW MAIL!');
+                                    console.log(
+                                        'From: ' + mail.from[0].address + '\n' +
+                                        'Subject: ' + mail.subject + '\n' +
+                                        'Body:\n' + mail.text
+                                    );
+                                });
+
+                                //  Write body data to parser
+                                msg.on('body', function (stream, info) {
+                                    stream.on('data', function (chunk) {
+                                        parser.write(chunk.toString('utf8'));
+                                    });
+                                });
+
+                                msg.once('end', function () {
+                                    parser.end();
                                 });
                             });
-
-                            msg.once('end', function () {
-                                parser.end();
-                            });
                         });
-                    });
-                };
+                    };
 
-                //  Collect existing unseen emails
-                collectUnseenEmails();
-
-                //  Listen for new mail coming in
-                self._imap.on('mail', function (newMsgs) {
+                    //  Collect existing unseen emails
                     collectUnseenEmails();
+
+                    //  Listen for new mail coming in
+                    self._imap.on('mail', function (newMsgs) {
+                        collectUnseenEmails();
+                    });
                 });
             });
-        });
 
-        self._imap.on('error', function (err) {
-            console.log(err);
-            console.log('Trying again in 10 seconds...');
-            self._imap.end();
+            self._imap.on('error', function (err) {
+                console.log(err);
+                console.log('Trying again in 10 seconds...');
+                self._imap.end();
 
-            //  Get a new Imap to work with
-            getFreshImap(function (err, imap) {
-                if (err) {
-                    console.log(err);
-                } else {
-                    self._imap = imap;
+                //  Get a new Imap to work with
+                getFreshImap(function (err, imap) {
+                    if (err) {
+                        console.log(err);
+                    } else {
+                        self._imap = imap;
 
-                    //  Try again in 10 sec
-                    setTimeout(function () {
-                        self._imap.connect();
-                    }, 10000);
-                }
+                        //  Try again in 10 sec
+                        setTimeout(function () {
+                            self._imap.connect();
+                        }, 10000);
+                    }
+                });
             });
-        });
 
-        self._imap.connect();
+            self._imap.connect();
+        });
     }
 }
 
