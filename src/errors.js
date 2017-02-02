@@ -5,5 +5,6 @@ module.exports = {
     INVALID_DOC_ID: '401',
     INVALID_DATE: '402',
     INVALID_COLLECTION: '403',
-    INVALID_DOCTYPE: '404'
+    INVALID_DOCTYPE: '404',
+    INVALID_INVENTORY: '405'
 };
