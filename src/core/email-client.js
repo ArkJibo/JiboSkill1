@@ -14,6 +14,7 @@ var MailParser = require('mailparser').MailParser;
 var NodeMailer = require('nodemailer');
 
 var Q = require('q');
+var jsonfile = require('jsonfile');
 
 //  TODO: there's probably a better way to be error resilient than creating a new Imap
 function getFreshImap (cb) {
@@ -78,6 +79,9 @@ class EmailClient {
         self._imap = Q.defer();
         self._transporter = Q.defer();
         self._status = Q.defer();
+        self._SendCheck = Q.defer();
+        self._changeCheck = Q.defer();
+
        
         getFreshImap(function (err, imap, email, smtpConfig) {
             if (err) {
@@ -86,12 +90,9 @@ class EmailClient {
                 self._imap.resolve(imap);
                 self._email = email;
                 self._transporter.resolve(NodeMailer.createTransport(smtpConfig));
-                self._ready = true;
-                //console.log('Completed');
                 
             }
         });
-
     }
 
     _loadInfo(){
@@ -110,131 +111,98 @@ class EmailClient {
         return self._status.promise;
     }
 
+    _loadSendCheck(){
+        var self = this;
+        return self._SendCheck.promise;
+    }
+
+    _loadChangeCheck(){
+        var self = this;
+        return self._changeCheck.promise;
+    }
+
     //method to change name of user
     _changeName(name){
         var self = this;
         self._name = name;
     }
 
-    _changeEmail(email){
+    _changeEmail(email, password){
         var self = this;
-        self._email = email;
+        //self._email = email;
+
+        self._imap = Q.defer();
+        self._transporter = Q.defer();
+
+        var obj = {
+          "email": email,
+          "password": password
+        };
+
+        jsonfile.writeFile("./email.json", obj, function (err) {
+            if (err){
+                console.log(err);
+                return;
+            }
+            console.log("email.json was updated!");
+
+            getFreshImap(function (err, imap, email, smtpConfig) {
+                if (err) {
+                    console.log(err);
+                } else {
+                    self._imap.resolve(imap);
+                    self._email = email;
+                    self._changeCheck.resolve(true);
+                    self._transporter.resolve(NodeMailer.createTransport(smtpConfig));
+                    
+                }
+            });            
+
+        });
+
+
     }
 
     //attachments as array of Path
     _sendEmail(toName, toEmail, subject, text, attachments){
         var self = this;
+        var fromText =  '"' + self.name + '" <' + self._email + '>'; 
+        var toText = '"' + toName + '" <' + toEmail + '>'; 
 
-        if (self._email == ""){
-            fs.readFile('./email.json', 'utf8', function (err, data) {
-                if (err) {
-                    cconsole.log("Error: ", err);
-                } else {
-                    try {
-                        var creds = JSON.parse(data);   //  Can throw exception
-                        
-                        var email = creds.email;
-
-                        //construct config necessary to send email 
-                        var smtpConfig = { 
-                            service: "Gmail",
-                            auth:{
-                                user: creds.email,
-                                pass: creds.password
-                            }
-                        };
-
-                        self._email = email;
-                        //self._transporter = NodeMailer.createTransport(smtpConfig);
-                        
-                    } catch (e) {
-                        console.log("Error: ", e);
-                    }
-                }
-
-                var fromText =  '"' + self.name + '" <' + self._email + '>'; 
-                var toText = '"' + toName + '" <' + toEmail + '>'; 
-
-                var files = [];
-                if (attachments != null){
-                    for (var i = 0; i < attachments.length; i++){
-                        
-                        files.push({
-                            path: attachments[i]
-                        });
-                    }
-                }
-
-                //mail component
-                var mailOptions = {
-                    from: fromText, // sender address
-                    to: toText, // list of receivers
-                    subject: subject, // Subject line
-                    text: text, // plaintext body
-                    attachments: files //attachments
-                }
-
-                self._loadTransporter().done(function (transporter){
-                    self._transporter = transporter;
-
-                    // send mail with defined transport object
-                    self._transporter.sendMail(mailOptions, function(error, info){
-                        if(error){
-                            console.log(error);
-                            return;
-                        }
-                        console.log('Message sent: ' + info.response);
-                    });
-                });
-
-
+        var files = [];
+        if (attachments != null){
+            for (var i = 0; i < attachments.length; i++){
                 
-
-
-
-
-            });
+                files.push({
+                    path: attachments[i]
+                });
+            }
         }
-        else{
-            var fromText =  '"' + self.name + '" <' + self._email + '>'; 
-            var toText = '"' + toName + '" <' + toEmail + '>'; 
 
-            var files = [];
-            if (attachments != null){
-                for (var i = 0; i < attachments.length; i++){
-                    
-                    files.push({
-                        path: attachments[i]
-                    });
-                }
-            }
+        //mail component
+        var mailOptions = {
+            from: fromText, // sender address
+            to: toText, // list of receivers
+            subject: subject, // Subject line
+            text: text, // plaintext body
+            attachments: files //attachments
+        }
 
-            //mail component
-            var mailOptions = {
-                from: fromText, // sender address
-                to: toText, // list of receivers
-                subject: subject, // Subject line
-                text: text, // plaintext body
-                attachments: files //attachments
-            }
+        // send mail with defined transport object
+        self._loadTransporter().done(function (transporter){
+            self._transporter = transporter;
 
             // send mail with defined transport object
-            self._loadTransporter().done(function (transporter){
-                self._transporter = transporter;
-
-                // send mail with defined transport object
-                self._transporter.sendMail(mailOptions, function(error, info){
-                    if(error){
-                        console.log(error);
-                        return;
-                    }
-                    console.log('Message sent: ' + info.response);
-                });
+            self._transporter.sendMail(mailOptions, function(error, info){
+                if(error){
+                    console.log(error);
+                    return;
+                }
+                self._SendCheck.resolve(true);
+                console.log('Message sent: ' + info.response);
             });
-        }
-
+        });
         
-
     }
 
     _checkEmails (_imap) {
@@ -248,7 +216,6 @@ class EmailClient {
                     if (err) {
                         throw err;
                     }
-
                     //  Parses all unseen emails
                     var collectUnseenEmails = function () {
                         self._imap.search(['UNSEEN'], function (err, results) {

@@ -50,14 +50,35 @@ describe("Email Client test:", function() {
           
         }, 7000);
         
-
       });
+    });
+  });
+  
 
-      
-
+  describe("Changing email client variable:", function(){
+    it("Changing username", function(){
+      email_Client._changeName("Ben10");
+      expect(email_Client._name).to.equal("Ben10");
     });
 
+    it("Changing email", function(done){
+      email_Client._changeEmail("kimr07175@gmail.com", "Benji-1717");
+      email_Client._loadChangeCheck().done(function(changeCheck){
+        expect(changeCheck).to.equal(true);
+        expect(email_Client._email).to.equal("kimr07175@gmail.com");
 
+        email_Client._sendEmail("Ben Lee", "eagle2417@gmail.com", "Hi", "Hello", null);
+        email_Client._loadSendCheck().done(function(check){
+          //email_Client._checkEmails();
+          expect(check).to.equal(true);
+          done();
+          
+        });
+
+      });
+      
+      
+    });
 
 
   });
