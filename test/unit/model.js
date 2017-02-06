@@ -87,12 +87,6 @@ describe('Model', function () {
     });
 
     var presentTime = moment().format();
-    var mockRepeat = {
-        type: 'winning',
-        startTime: presentTime,
-        endTime: presentTime,
-        interval: '10w'
-    };
     var mockRemind = {
         type: 'much winning',
         numReminders: 1337,
@@ -100,28 +94,103 @@ describe('Model', function () {
         startTime: presentTime
     };
 
-    describe('#getTodaySchedule()', function () {
+    var fillTodayEvents = function (done) {
+        var start = moment().startOf('day');
+        //  Insert test set of events
+        model._db.events.insert([{
+            type: 'fun',
+            time: moment(start).add(5, 'hours').toISOString(),
+            reminderInfo: {
+                numReminders: 2,
+                interval: {
+                    value: 1,
+                    modifier: 'h'
+                },
+                startTime: moment(start).add(2, 'hours').toISOString()
+            }
+        }, {
+            type: 'run',
+            time: moment(start).add(7, 'hours').toISOString(),
+            reminderInfo: {
+                numReminders: 2,
+                interval: {
+                    value: 2,
+                    modifier: 'h'
+                },
+                startTime: moment(start).add(1, 'hours').toISOString()
+            }
+        }, {
+            type: 'bun',
+            time: moment(start).add(9, 'hours').toISOString(),
+            reminderInfo: {
+                numReminders: 3,
+                interval: {
+                    value: 2,
+                    modifier: 'h'
+                },
+                startTime: moment(start).add(2, 'hours').toISOString()
+            }
+        }, {
+            type: 'stun',
+            time: moment(start).add(2, 'days').toISOString(),
+            reminderInfo: {
+                numReminders: 1,
+                interval: {
+                    value: 1,
+                    modifier: 'h'
+                },
+                startTime: moment(start)
+            }
+        }, {
+            type: 'hun',
+            time: moment(start).subtract(1, 'days').toISOString(),
+            reminderInfo: {
+                numReminders: 1,
+                interval: {
+                    value: 1,
+                    modifier: 'h'
+                },
+                startTime: moment(start)
+            }
+        }], function (err, docs) {
+            expect(err).to.not.exist;
+            done();
+        });
+    };
+
+    describe('#fillTodayReminderQueue()', function () {
         before(function (done) {
-            //  Insert test set of events
-            model._db.events.insert([{
-                type: 'fun',
-                time: moment(presentTime).toISOString()
-            }, {
-                type: 'run',
-                time: moment(presentTime).add(2, 'hours').toISOString()
-            }, {
-                type: 'bun',
-                time: moment(presentTime).add(8, 'hours').toISOString()
-            }, {
-                type: 'stun',
-                time: moment(presentTime).add(2, 'days').toISOString()
-            }, {
-                type: 'hun',
-                time: moment(presentTime).subtract(1, 'days').toISOString()
-            }], function (err, docs) {
+            fillTodayEvents(done);
+        });
+
+        it('should fill the correct reminders', function (done) {
+            model.fillTodayReminderQueue(function (err, docs) {
                 expect(err).to.not.exist;
+                expect(docs.length).to.equal(7);
+
+                var start = moment().startOf('day');
+                expect(docs[0].type).to.equal('fun');
+                expect(docs[0].time).to.equal(moment(start).add(2, 'hours').toISOString());
+                expect(docs[1].type).to.equal('fun');
+                expect(docs[1].time).to.equal(moment(start).add(3, 'hours').toISOString());
+                expect(docs[2].type).to.equal('run');
+                expect(docs[2].time).to.equal(moment(start).add(1, 'hours').toISOString());
+                expect(docs[3].type).to.equal('run');
+                expect(docs[3].time).to.equal(moment(start).add(3, 'hours').toISOString());
+                expect(docs[4].type).to.equal('bun');
+                expect(docs[4].time).to.equal(moment(start).add(2, 'hours').toISOString());
+                expect(docs[5].type).to.equal('bun');
+                expect(docs[5].time).to.equal(moment(start).add(4, 'hours').toISOString());
+                expect(docs[6].type).to.equal('bun');
+                expect(docs[6].time).to.equal(moment(start).add(6, 'hours').toISOString());
                 done();
             });
+        });
+    });
+
+    describe('#getTodaySchedule()', function () {
+        before(function (done) {
+            fillTodayEvents(done);
         });
 
         it('should return 3 events for today', function (done) {
@@ -220,16 +289,16 @@ describe('Model', function () {
             //  Manually insert
             model._db.reminderQueue.insert([{
                 name: 'event1',
-                time: moment(presentTime).add(1, 'hour').toISOString()
+                time: moment(presentTime).add(1, 'hours').toISOString()
             }, {
                 name: 'event2',
-                time: moment(presentTime).add(2, 'hour').toISOString()
+                time: moment(presentTime).add(2, 'hours').toISOString()
             }, {
                 name: 'event3',
-                time: moment(presentTime).add(3, 'hour').toISOString()
+                time: moment(presentTime).add(3, 'hours').toISOString()
             }, {
                 name: 'event4',
-                time: moment(presentTime).add(4, 'hour').toISOString()
+                time: moment(presentTime).add(4, 'hours').toISOString()
             }], function (err, docs) {
                 expect(err).to.not.exist;
 
@@ -245,10 +314,12 @@ describe('Model', function () {
             //  Manually insert
             model._db.reminderQueue.insert([{
                 name: 'event1',
-                time: moment(presentTime).subtract(2, 'days').toISOString()
+                time: moment(presentTime).subtract(2, 'days').toISOString(),
+                viewed: true
             }, {
                 name: 'event2',
-                time: moment(presentTime).subtract(1, 'days').toISOString()
+                time: moment(presentTime).subtract(1, 'days').toISOString(),
+                viewed: false
             }, {
                 name: 'event3',
                 time: moment(presentTime).add(1, 'days').toISOString()
@@ -257,7 +328,7 @@ describe('Model', function () {
 
                 model.getNextReminder(function (err, doc) {
                     expect(err).to.not.exist;
-                    expect(doc.name).to.equal('event3');
+                    expect(doc.name).to.equal('event2');
                     done();
                 });
             });
@@ -268,6 +339,40 @@ describe('Model', function () {
                 assert.equal(err, null);
                 assert.equal(doc, undefined);
                 done();
+            });
+        });
+    });
+
+    describe('#setReminderViewed()', function () {
+        it('should set flag correctly', function (done) {
+            model._db.reminderQueue.insert({
+                _id: '1234567890',
+                viewed: false
+            }, function (err, docs) {
+                expect(err).to.not.exist;
+
+                model.setReminderViewed('1234567890', function (err, numAffected, affectedDocs) {
+                    expect(err).to.not.exist;
+                    expect(numAffected).to.equal(1);
+                    expect(affectedDocs[0].viewed).to.be.true;
+                    done();
+                });
+            });
+        });
+
+        it('should get invalid ID error', function (done) {
+            model._db.reminderQueue.insert({
+                _id: '1234567890',
+                viewed: false
+            }, function (err, docs) {
+                expect(err).to.not.exist;
+
+                model.setReminderViewed('asdfasdf', function (err, numAffected, affectedDocs) {
+                    expect(err).to.equal(Errors.INVALID_DOC_ID);
+                    expect(numAffected).to.not.exist;
+                    expect(affectedDocs).to.not.exist;
+                    done();
+                });
             });
         });
     });
@@ -812,15 +917,27 @@ describe('Model', function () {
     });
 
     describe('#addNewEvent()', function () {
-        it('should succeed with correct params', function (done) {
+        it('should succeed with repeatInfo', function (done) {
             model.addNewEvent({
                 type: 'appointment',
                 subtype: 'medical',
                 time: presentTime,
-                repeatInfo: mockRepeat,
+                repeatInfo: {
+                    startTime: moment(presentTime).add(1, 'hours').toISOString(),
+                    interval: {
+                        value: 2,
+                        modifier: 'h'
+                    },
+                    endTime: moment(presentTime).add(5, 'hours').toISOString()
+                },
                 reminderInfo: mockRemind
-            }, function (err) {
+            }, function (err, docs) {
                 expect(err).to.not.exist;
+                expect(docs.length).to.equal(4);
+                expect(docs[0].time).to.equal(moment(presentTime).toISOString());
+                expect(docs[1].time).to.equal(moment(presentTime).add(1, 'hours').toISOString());
+                expect(docs[2].time).to.equal(moment(presentTime).add(3, 'hours').toISOString());
+                expect(docs[3].time).to.equal(moment(presentTime).add(5, 'hours').toISOString());
                 done();
             });
         });
@@ -889,7 +1006,7 @@ describe('Model', function () {
         });
     });
 
-    describe('#addReminder()', function () {
+    describe('#addNewReminder()', function () {
         it('should add new Reminder to collection', function (done) {
             //  Manually insert an event
             model._db.events.insert({
@@ -897,7 +1014,7 @@ describe('Model', function () {
             }, function (err, docs) {
                 expect(err).to.not.exist;
 
-                model.addReminder({
+                model.addNewReminder({
                     type: 'events',
                     event: {
                         _id: 'alksdjhfi3j928htger'
@@ -911,7 +1028,7 @@ describe('Model', function () {
         });
 
         it('should fail for missing key', function (done) {
-            model.addReminder({
+            model.addNewReminder({
                 why: 'tho'
             }, function (err, doc) {
                 expect(err).to.equal(Errors.KEY_MISSING);
@@ -927,7 +1044,7 @@ describe('Model', function () {
             }, function (err, docs) {
                 expect(err).to.not.exist;
 
-                model.addReminder({
+                model.addNewReminder({
                     type: 'events',
                     event: {
                         _id: 'such a terrible id'
@@ -942,9 +1059,9 @@ describe('Model', function () {
         });
     });
 
-    describe('#addPatientInfo()', function () {
+    describe('#addNewPatientInfo()', function () {
         it('should add new info', function (done) {
-            model.addPatientInfo({
+            model.addNewPatientInfo({
                 type: 'favorite',
                 subType: 'game',
                 value: 'hopscotch'
@@ -955,7 +1072,7 @@ describe('Model', function () {
         });
 
         it('should fail to add info', function (done) {
-            model.addPatientInfo({
+            model.addNewPatientInfo({
                 random: 'nonsense'
             }, function (err, doc) {
                 expect(err).to.equal(Errors.KEY_MISSING);
@@ -965,9 +1082,9 @@ describe('Model', function () {
         });
     });
 
-    describe('#addPerson()', function () {
+    describe('#addNewPerson()', function () {
         it('should add new person', function (done) {
-            model.addPerson({
+            model.addNewPerson({
                 first: 'Eric',
                 last: 'Dong',
                 relationship: 'bff forever',
@@ -980,7 +1097,7 @@ describe('Model', function () {
         });
 
         it('should fail to add person', function (done) {
-            model.addPerson({
+            model.addNewPerson({
                 utter: 'nonsense'
             }, function (err, doc) {
                 expect(err).to.equal(Errors.KEY_MISSING);
@@ -990,9 +1107,9 @@ describe('Model', function () {
         });
     });
 
-    describe('#addMedia()', function () {
+    describe('#addNewMedia()', function () {
         it('should add new media', function (done) {
-            model.addMedia({
+            model.addNewMedia({
                 type: 'photo',
                 occasion: 'wedding',
                 file: 'media/music/banana.mp3',
@@ -1004,7 +1121,7 @@ describe('Model', function () {
         });
 
         it('should fail to add media', function (done) {
-            model.addMedia({
+            model.addNewMedia({
                 utter: 'nonsense'
             }, function (err, doc) {
                 expect(err).to.equal(Errors.KEY_MISSING);
@@ -1014,9 +1131,9 @@ describe('Model', function () {
         });
     });
 
-    describe('#addEntertainment()', function () {
+    describe('#addNewEntertainment()', function () {
         it('should add new entertainment', function (done) {
-            model.addEntertainment({
+            model.addNewEntertainment({
                 type: 'riddle',
                 dateAdded: presentTime,
                 lastUsed: presentTime,
@@ -1028,7 +1145,7 @@ describe('Model', function () {
         });
 
         it('should fail to add entertainment', function (done) {
-            model.addEntertainment({
+            model.addNewEntertainment({
                 not: 'entertaining'
             }, function (err, doc) {
                 expect(err).to.equal(Errors.KEY_MISSING);
@@ -1038,9 +1155,9 @@ describe('Model', function () {
         });
     });
 
-    describe('#addVoiceLine()', function () {
+    describe('#addNewVoiceLine()', function () {
         it('should add new voice line', function (done) {
-            model.addVoiceLine({
+            model.addNewVoiceLine({
                 type: 'greeting',
                 line: 'Greetings adventurer!',
                 dateAdded: presentTime
@@ -1051,7 +1168,7 @@ describe('Model', function () {
         });
 
         it('should fail to add voice', function (done) {
-            model.addVoiceLine({
+            model.addNewVoiceLine({
                 bad: 'voice'
             }, function (err, doc) {
                 expect(err).to.equal(Errors.KEY_MISSING);
@@ -1067,15 +1184,12 @@ describe('Model', function () {
                 type: 'appointment',
                 subtype: 'medical',
                 time: presentTime,
-                repeatInfo: mockRepeat,
                 reminderInfo: mockRemind
             }, function (err, params) {
                 expect(err).to.not.exist;
 
                 var asIso = moment(presentTime).toISOString();
                 expect(params.time).to.equal(asIso);
-                expect(params.repeatInfo.startTime).to.equal(asIso);
-                expect(params.repeatInfo.endTime).to.equal(asIso);
                 expect(params.reminderInfo.startTime).to.equal(asIso);
                 done();
             });
