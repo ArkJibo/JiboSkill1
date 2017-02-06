@@ -1,3 +1,5 @@
+/*jshint loopfunc: true */
+
 'use strict';
 
 var Datastore = require('nedb');
@@ -7,11 +9,11 @@ var Errors = require('./errors');
 var async = require('async');
 var _ = require('lodash');
 
-var minRepeatInfoKeys = ['type', 'startTime', 'interval', 'endTime'];
-var minReminderInfoKeys = ['type', 'numReminders', 'interval', 'startTime'];
+var minRepeatInfoKeys = ['startTime', 'interval', 'endTime'];
+var minReminderInfoKeys = ['numReminders', 'interval', 'startTime'];
 var minCollectionKeys = {
     'events': {
-        'default': ['type', 'subtype', 'time', 'repeatInfo', 'reminderInfo']
+        'default': ['type', 'subtype', 'time', 'reminderInfo']
     },
     'inventory': {
         'supply': ['type', 'name', 'amount'],
@@ -37,6 +39,20 @@ var minCollectionKeys = {
     }
 };
 var dateKeys = ['time', 'lastTaken', 'startTime', 'endTime', 'birthday', 'dateAdded', 'lastUsed'];
+var timeModifiers = {
+    h: 'hours',
+    d: 'days',
+    w: 'weeks',
+    m: 'months',
+    y: 'years'
+};
+var updateOptions = {
+    multi: true,
+    returnUpdatedDocs: true
+};
+var removeOptions = {
+    multi: true
+};
 
 class Model {
 
@@ -60,6 +76,41 @@ class Model {
     }
 
     /*  PUBLIC METHODS  ******************************************************************************************/
+
+    /**
+     * Fills the reminder queue with events of the day
+     * @param cb Callback
+     */
+    fillTodayReminderQueue (cb) {
+        var self = this;
+
+        //  Get today's events
+        self.getTodaySchedule(function (err, docs) {
+            if (err) {
+                cb(err);
+            } else {
+                var reminders = [];
+
+                //  Extract reminder info from each event
+                docs.forEach(function (doc) {
+                    //  Fill all reminders needed for this event
+                    for (var i = 0; i < doc.reminderInfo.numReminders; i++) {
+                        var startMoment = moment(doc.reminderInfo.startTime);
+                        var interval = i * doc.reminderInfo.interval.value;
+                        reminders.push({
+                            type: doc.type,
+                            eventID: doc._id,
+                            viewed: false,
+                            time: startMoment.add(interval, timeModifiers[doc.reminderInfo.interval.modifier]).toISOString()
+                        });
+                    }
+                });
+
+                //  Add to reminder queue
+                self._addToCollection('reminderQueue', reminders, cb);
+            }
+        });
+    }
 
     /**
      * Get the entire schedule for today
@@ -95,14 +146,13 @@ class Model {
     getNextReminder (cb) {
         var self = this;
 
-        //  First remove any expired reminders
+        //  First remove any expired reminders that have been viewed
         self._removeFromCollection('reminderQueue', {
             time: {
                 $lte: moment().toISOString()
-            }
-        }, {
-            multi: true
-        }, function (err, numRemoved) {
+            },
+            viewed: true    //  Only remove ones that have been viewed
+        }, removeOptions, function (err, numRemoved) {
             if (err) {
                 cb(err);
             } else {
@@ -116,6 +166,33 @@ class Model {
                         cb(err, docs.length === 0 ? null : docs[0]);
                     }
                 );
+            }
+        });
+    }
+
+    /**
+     * Set the viewed flag of the reminder to true
+     * @param id Reminder ID
+     * @param cb Callback
+     */
+    setReminderViewed (id, cb) {
+        var self = this;
+
+        //  Verify the ID is legit
+        self._getFromCollection('reminderQueue', {
+            _id: id
+        }, function (err, docs) {
+            if (err || docs.length === 0) {
+                cb(err || Errors.INVALID_DOC_ID);
+            } else {
+                //  Update the flag
+                self._updateInCollection('reminderQueue', {
+                    _id: id
+                }, {
+                    $set: {
+                        viewed: true
+                    }
+                }, updateOptions, cb);
             }
         });
     }
@@ -247,15 +324,7 @@ class Model {
             //  Invalid collection
             cb(Errors.INVALID_COLLECTION);
         } else {
-            self._updateInCollection(
-                type,
-                params,
-                update, {
-                    multi: true,
-                    returnUpdatedDocs: true
-                },
-                cb
-            );
+            self._updateInCollection(type, params, update, updateOptions, cb);
         }
     }
 
@@ -275,9 +344,7 @@ class Model {
             //  Invalid collection
             cb(Errors.INVALID_COLLECTION);
         } else {
-            self._removeFromCollection(type, params, {
-                multi: true
-            }, cb);
+            self._removeFromCollection(type, params, removeOptions, cb);
         }
     }
 
@@ -294,8 +361,27 @@ class Model {
             if (err) {
                 cb(err);
             } else {
-                //  All is good, add to collection
-                self._addToCollection('events', params, cb);
+                var events = [params];
+
+                //  Check for repeat info
+                if (params.repeatInfo) {
+                    var repeatInfo = _.cloneDeep(params.repeatInfo);
+                    delete params.repeatInfo;
+
+                    //  Add all events leading up to end time
+                    var currTime = moment(repeatInfo.startTime);
+                    while (currTime <= moment(repeatInfo.endTime)) {
+                        //  Update time value and add to array
+                        var newParams = _.cloneDeep(params);
+                        newParams.time = moment(currTime).toISOString();
+                        events.push(newParams);
+
+                        //  Add time interval to currTime
+                        currTime = moment(currTime).add(repeatInfo.interval.value, timeModifiers[repeatInfo.interval.modifier]);
+                    }
+                }
+
+                self._addToCollection('events', events, cb);
             }
         });
     }
@@ -330,7 +416,7 @@ class Model {
      * @param params Params of reminder
      * @param cb Callback
      */
-    addReminder (params, cb) {
+    addNewReminder (params, cb) {
         var self = this;
 
         //  Verify correct params
@@ -358,7 +444,7 @@ class Model {
      * @param params Params about the new info
      * @param cb Callback
      */
-    addPatientInfo (params, cb) {
+    addNewPatientInfo (params, cb) {
         var self = this;
 
         //  Verify correct params
@@ -377,7 +463,7 @@ class Model {
      * @param params Params of the person
      * @param cb Callback
      */
-    addPerson (params, cb) {
+    addNewPerson (params, cb) {
         var self = this;
 
         //  Verify correct params
@@ -396,7 +482,7 @@ class Model {
      * @param params Params of media
      * @param cb Callback
      */
-    addMedia (params, cb) {
+    addNewMedia (params, cb) {
         var self = this;
 
         //  Verify correct params
@@ -415,7 +501,7 @@ class Model {
      * @param params Params of entertainment
      * @param cb Callback
      */
-    addEntertainment (params, cb) {
+    addNewEntertainment (params, cb) {
         var self = this;
 
         //  Verify correct params
@@ -434,7 +520,7 @@ class Model {
      * @param params Params of voice line
      * @param cb Callback
      */
-    addVoiceLine (params, cb) {
+    addNewVoiceLine (params, cb) {
         var self = this;
 
         //  Verify correct params
