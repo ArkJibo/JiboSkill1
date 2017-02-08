@@ -170,7 +170,7 @@ class EmailClient {
         var toText = '"' + toName + '" <' + toEmail + '>'; 
 
         var files = [];
-        if (attachments != null){
+        if (attachments !== null){
             for (var i = 0; i < attachments.length; i++){
                 
                 files.push({
