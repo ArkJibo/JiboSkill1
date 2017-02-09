@@ -219,7 +219,7 @@ class EmailClient {
         
     }
 
-    _checkEmails (_imap) {
+    _checkEmails () {
         var self = this;
 
         self._loadInfo().done(function (imap){
