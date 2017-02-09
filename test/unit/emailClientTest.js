@@ -48,7 +48,8 @@ describe("Email Client test:", function() {
         //check the content
         console.log("Alert: Listen Received Email!");
         expect(res.fromEmail).to.equal("kimr07175@gmail.com");
-        expect(res.fromName).to.equal("Roy Kim");
+        expect(res.fromFirstName).to.equal("Roy");
+        expect(res.fromLastName).to.equal("Kim");
         expect(res.subject).to.equal("Hi");
         expect(res.body).to.equal("Hello\n");
         listenCheck = true;

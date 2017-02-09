@@ -259,9 +259,15 @@ class EmailClient {
                                         'Body:' + mail.text
                                     );
                                     
+                                    var nameField = (mail.from[0].name).split(" ");
+
+                                    var firstName = nameField[0];
+                                    var lastName = nameField[1];
+
                                     var content = {
                                         fromEmail: mail.from[0].address,
-                                        fromName: mail.from[0].name,
+                                        fromFirstName: firstName,
+                                        fromLastName: lastName,
                                         subject: mail.subject,
                                         body: mail.text
                                     };
