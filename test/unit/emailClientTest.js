@@ -12,13 +12,18 @@ var Errors = require('../../src/errors');
 var expect = require('chai').expect;
 var util = require('../../src/util');
 var emailClient = require('../../src/core/email-client');
+var eventBus = require('../../src/core/event/event-bus');
+var Q = require('q');
 
 describe("Email Client test:", function() {
   var email_Client;
+  var event_Bus;
 
   before(function () {
     //Instantiate email Client class 
-    email_Client = new emailClient();
+    event_Bus = new eventBus();
+    email_Client = new emailClient("Roy Kim", event_Bus);
+
   });
 
   describe("Checking email functionality:", function() {
@@ -29,14 +34,38 @@ describe("Email Client test:", function() {
       //loadstatus make sure that there is a reponse from server before we check
       email_Client._loadStatus().done(function(status){
         //there should be no new email 
-        expect(email_Client._notice).to.equal("No new mail");
+        expect(status).to.equal("No new mail");
         //indicating that the test is done 
         done();
       });
     });
 
-    it("Check inbox with new email and sending email", function(done) {
+    it("Check inbox with new email and sending email with event listener", function(done) {
       //send email to ourself 
+      var listenCheck = false;
+      //start listen event bus
+      event_Bus.addEventListener("RECEIVED_EMAIL", function(res){
+        //check the content
+        console.log("Alert: Listen Received Email!");
+        expect(res.fromEmail).to.equal("kimr07175@gmail.com");
+        expect(res.fromName).to.equal("Roy Kim");
+        expect(res.subject).to.equal("Hi");
+        expect(res.body).to.equal("Hello\n");
+        listenCheck = true;
+      });
+
+      //start send event bus
+      var sendCheck = false;
+      event_Bus.addEventListener("SEND_EMAIL", function(res){
+        //check the content 
+        console.log("Alert: Listen Sent Email!");
+        expect(res.fromEmail).to.equal("kimr07175@gmail.com");
+        expect(res.fromName).to.equal("Roy Kim");
+        expect(res.subject).to.equal("Hi");
+        expect(res.body).to.equal("Hello");
+        sendCheck = true;
+      });
+
       email_Client._sendEmail("Ben Lee", "kimr07175@gmail.com", "Hi", "Hello", null);
       console.log("Alert: Sending a test email");
       //loadsendcheck make sure the email was sent before we check whether we received it 
@@ -44,14 +73,20 @@ describe("Email Client test:", function() {
         setTimeout(function(){
           console.log("Alert: checking");
           //there should be new email 
-          expect(email_Client._notice).to.equal("New mail");
-          done();
-        }, 7000);
+          email_Client._loadStatus().done(function(status){
+            //there should be no new email 
+            expect(status).to.equal("New mail");
+            expect(listenCheck).to.equal(true);
+            expect(sendCheck).to.equal(true);
+            //indicating that the test is done 
+            done();
+          });
+          
+        }, 5000);
       });
     });
   });
   
-
   describe("Changing email client variable:", function(){
     it("Changing username", function(){
       //changing username
@@ -74,13 +109,8 @@ describe("Email Client test:", function() {
           expect(check).to.equal(true);
           done();
         });
-
       });
-      
-      
     });
-
-
   });
 
 });

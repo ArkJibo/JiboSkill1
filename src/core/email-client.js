@@ -72,7 +72,7 @@ function getFreshImap (cb) {
 
 class EmailClient {
     //constructor takes the full name of user as String
-    constructor (name) {
+    constructor (name, eventBus) {
         var self = this;
         self._name = name; 
         self._email = "";
@@ -81,7 +81,7 @@ class EmailClient {
         self._status = Q.defer();
         self._SendCheck = Q.defer();
         self._changeCheck = Q.defer();
-
+        self._eventBus = eventBus;
        
         getFreshImap(function (err, imap, email, smtpConfig) {
             if (err) {
@@ -166,8 +166,14 @@ class EmailClient {
     //attachments as array of Path
     _sendEmail(toName, toEmail, subject, text, attachments){
         var self = this;
-        var fromText =  '"' + self.name + '" <' + self._email + '>'; 
-        var toText = '"' + toName + '" <' + toEmail + '>'; 
+        var fromText = {
+            name: self._name,
+            address: self._email
+        };
+        var toText = {
+            name: toName, 
+            address: toEmail
+        };
 
         var files = [];
         if (attachments !== null){
@@ -200,6 +206,14 @@ class EmailClient {
                 }
                 self._SendCheck.resolve(true);
                 console.log('Message sent: ' + info.response);
+
+                var content = {
+                    fromEmail: fromText.address,
+                    fromName: fromText.name,
+                    subject: subject,
+                    body: text
+                };
+                self._eventBus.emitEvent("SEND_EMAIL", content);
             });
         });
         
@@ -222,6 +236,7 @@ class EmailClient {
                             if (err || results.length === 0) {
                                 console.log(err || 'NO NEW MAIL');
                                 self._status.resolve("No new mail");
+                                self._status = Q.defer();
                                 return;
                             }
                             self._status.resolve("New mail");
@@ -239,9 +254,19 @@ class EmailClient {
                                     console.log('NEW MAIL!');
                                     console.log(
                                         'From: ' + mail.from[0].address + '\n' +
+                                        'Name: ' + mail.from[0].name + '\n' + 
                                         'Subject: ' + mail.subject + '\n' +
-                                        'Body:\n' + mail.text
+                                        'Body:' + mail.text
                                     );
+                                    
+                                    var content = {
+                                        fromEmail: mail.from[0].address,
+                                        fromName: mail.from[0].name,
+                                        subject: mail.subject,
+                                        body: mail.text
+                                    };
+                                    self._eventBus.emitEvent("RECEIVED_EMAIL", content);
+                                    
                                 });
 
                                 //  Write body data to parser
