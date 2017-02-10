@@ -15,6 +15,7 @@ var NodeMailer = require('nodemailer');
 
 var Q = require('q');
 var jsonfile = require('jsonfile');
+var eventObj = require('./event/event');
 
 //  TODO: there's probably a better way to be error resilient than creating a new Imap
 function getFreshImap (cb) {
@@ -90,32 +91,31 @@ class EmailClient {
                 self._imap.resolve(imap);
                 self._email = email;
                 self._transporter.resolve(NodeMailer.createTransport(smtpConfig));
-                
             }
         });
     }
 
     _loadInfo(){
-        //  Get Imap obj and check emails
+    //  Get Imap obj and check emails
         var self = this;
         return self._imap.promise;
     }
-
+    //get transporter promise
     _loadTransporter(){
         var self = this; 
         return self._transporter.promise;
     }
-
+    //get status promise
     _loadStatus(){
         var self = this;
         return self._status.promise;
     }
-
+    //get sendcheck promise
     _loadSendCheck(){
         var self = this;
         return self._SendCheck.promise;
     }
-
+    //get changeCheck promise
     _loadChangeCheck(){
         var self = this;
         return self._changeCheck.promise;
@@ -126,11 +126,9 @@ class EmailClient {
         var self = this;
         self._name = name;
     }
-
+    //method to change email 
     _changeEmail(email, password){
         var self = this;
-        //self._email = email;
-
         self._imap = Q.defer();
         self._transporter = Q.defer();
 
@@ -154,13 +152,9 @@ class EmailClient {
                     self._email = email;
                     self._changeCheck.resolve(true);
                     self._transporter.resolve(NodeMailer.createTransport(smtpConfig));
-                    
                 }
             });            
-
         });
-
-
     }
 
     //attachments as array of Path
@@ -197,7 +191,6 @@ class EmailClient {
         // send mail with defined transport object
         self._loadTransporter().done(function (transporter){
             self._transporter = transporter;
-
             // send mail with defined transport object
             self._transporter.sendMail(mailOptions, function(error, info){
                 if(error){
@@ -206,17 +199,15 @@ class EmailClient {
                 }
                 self._SendCheck.resolve(true);
                 console.log('Message sent: ' + info.response);
-
                 var content = {
                     fromEmail: fromText.address,
                     fromName: fromText.name,
                     subject: subject,
                     body: text
                 };
-                self._eventBus.emitEvent("SEND_EMAIL", content);
+                self._eventBus.emitEvent(eventObj['SEND_EMAIL'], content);
             });
-        });
-        
+        });   
     }
 
     _checkEmails () {
@@ -250,7 +241,6 @@ class EmailClient {
                                 var parser = new MailParser();
                                 parser.on('end', function (mail) {
                                     //  Done parsing
-                                    //  TODO: logic for sending event to event bus goes here
                                     console.log('NEW MAIL!');
                                     console.log(
                                         'From: ' + mail.from[0].address + '\n' +
@@ -271,10 +261,9 @@ class EmailClient {
                                         subject: mail.subject,
                                         body: mail.text
                                     };
-                                    self._eventBus.emitEvent("RECEIVED_EMAIL", content);
+                                    self._eventBus.emitEvent(eventObj['RECEIVED_EMAIL'], content);
                                     
                                 });
-
                                 //  Write body data to parser
                                 msg.on('body', function (stream, info) {
                                     stream.on('data', function (chunk) {
@@ -288,10 +277,8 @@ class EmailClient {
                             });
                         });
                     };
-
                     //  Collect existing unseen emails
                     collectUnseenEmails();
-
                     //  Listen for new mail coming in
                     self._imap.on('mail', function (newMsgs) {
                         collectUnseenEmails();
@@ -318,10 +305,8 @@ class EmailClient {
                     }
                 });
             });
-
             self._imap.connect();
         });
     }
 }
-
 module.exports = EmailClient;

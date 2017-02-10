@@ -23,7 +23,6 @@ describe("Email Client test:", function() {
     //Instantiate email Client class 
     event_Bus = new eventBus();
     email_Client = new emailClient("Roy Kim", event_Bus);
-
   });
 
   describe("Checking email functionality:", function() {
@@ -44,7 +43,7 @@ describe("Email Client test:", function() {
       //send email to ourself 
       var listenCheck = false;
       //start listen event bus
-      event_Bus.addEventListener("RECEIVED_EMAIL", function(res){
+      event_Bus.addEventListener("received-email", function(res){
         //check the content
         console.log("Alert: Listen Received Email!");
         expect(res.fromEmail).to.equal("kimr07175@gmail.com");
@@ -57,7 +56,7 @@ describe("Email Client test:", function() {
 
       //start send event bus
       var sendCheck = false;
-      event_Bus.addEventListener("SEND_EMAIL", function(res){
+      event_Bus.addEventListener("send-email", function(res){
         //check the content 
         console.log("Alert: Listen Sent Email!");
         expect(res.fromEmail).to.equal("kimr07175@gmail.com");
@@ -82,7 +81,6 @@ describe("Email Client test:", function() {
             //indicating that the test is done 
             done();
           });
-          
         }, 5000);
       });
     });
