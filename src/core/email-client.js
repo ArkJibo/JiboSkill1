@@ -17,7 +17,10 @@ var Q = require('q');
 var jsonfile = require('jsonfile');
 var eventObj = require('./event/event');
 
-//  TODO: there's probably a better way to be error resilient than creating a new Imap
+/**
+* Get imap based from file 
+* @param cb Callback
+*/
 function getFreshImap (cb) {
     //  Get email creds from email.json
     fs.readFile('./email.json', 'utf8', function (err, data) {
@@ -25,10 +28,10 @@ function getFreshImap (cb) {
             cb(err);
         } else {
             try {
-                var creds = JSON.parse(data);   //  Can throw exception
+                var creds = JSON.parse(data);   // Can throw exception
                 var hosts = {
                     'gmail.com': 'imap.gmail.com',
-                    'yahoo.com': 'smtp.yahoo.com' //  Need to verify this one
+                    'yahoo.com': 'smtp.yahoo.com' 
                 };
 
                 //  Get the host for the email address
@@ -72,7 +75,11 @@ function getFreshImap (cb) {
 }
 
 class EmailClient {
-    //constructor takes the full name of user as String
+    /**
+    * Constructor for EmailClient
+    * @param name = string value of user's full name
+        eventBus = event object
+    */
     constructor (name, eventBus) {
         var self = this;
         self._name = name; 
@@ -95,38 +102,39 @@ class EmailClient {
         });
     }
 
+    //function to get imap promise so we can wait for imap to complete initialization
     _loadInfo(){
     //  Get Imap obj and check emails
         var self = this;
         return self._imap.promise;
     }
-    //get transporter promise
+    //function to get transporter promise so we can wait for transporter to complete initialization
     _loadTransporter(){
         var self = this; 
         return self._transporter.promise;
     }
-    //get status promise
+    //function to get status promise to get the status of email 
     _loadStatus(){
         var self = this;
         return self._status.promise;
     }
-    //get sendcheck promise
+    //function to get sendcheck promise to know when the email is sent 
     _loadSendCheck(){
         var self = this;
         return self._SendCheck.promise;
     }
-    //get changeCheck promise
+    //function to get changeCheck promise to know when email is changed successfully 
     _loadChangeCheck(){
         var self = this;
         return self._changeCheck.promise;
     }
 
-    //method to change name of user
+    //function to change Name
     _changeName(name){
         var self = this;
         self._name = name;
     }
-    //method to change email 
+    //function to change email
     _changeEmail(email, password){
         var self = this;
         self._imap = Q.defer();
