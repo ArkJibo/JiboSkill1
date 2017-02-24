@@ -9,6 +9,9 @@ var async = require('async');
 var minKeys = {
     'commandReport': {
         'default': ['command', 'subtype', 'totalUsage', 'individualData']
+    },
+    'dailyReport': {
+        'default': []
     }
 };
 
@@ -18,6 +21,7 @@ class Metrics {
         //  Initialize collections
         self._db = {};
         self._db.commandReport = new Datastore('./db/commandReport.db');
+        self._db.dailyReport = new Datastore('./db/dailyReport.db');
 
 
         Object.keys(self._db).forEach(collection => {
@@ -49,6 +53,51 @@ class Metrics {
                 }
         });
     }
+    /**
+     * Add a daily report to the collection
+     *If the report for that day exists, push the new data into the array
+     * @param params Params of command report
+     * @param cb Callback
+     */
+    addToDailyReport (params, cb) {
+        var self = this;
+
+        self._getFromCollection ('dailyReport', {date: params.date}, function (err, docs) {
+                if(Object.keys(docs).length == 0){
+                  params['firstInteraction'] = params.time;
+                  params['interactions'] = [{
+                    command : params.command,
+                    time : params.time
+                  }];
+                  delete params.time;
+                  delete params.command;
+                  self._addToCollection('dailyReport', params, cb);
+                }
+                else{
+                  self._updateInCollection('dailyReport', {'date': params.date}, { $push: {'interactions': {command: params.command, time: params.time}}}, cb);
+                }
+        });
+    }
+
+    /**
+     * Add a walk by to the daily report to the collection
+     *If the report for that day has not been created yet, do so
+     * @param params Params of command report
+     * @param cb Callback
+     */
+    addWalkToDailyReport (params, cb) {
+        var self = this;
+        self._getFromCollection ('dailyReport', {date: params.date}, function (err, docs) {
+                if(Object.keys(docs).length == 0){
+                  params.walkBys = 1;
+                  self._addToCollection('dailyReport', params, cb);
+                }
+                else{
+                  self._updateInCollection('dailyReport', {date: params.date}, {  $set: { walkBys : 1+docs[0].walkBys }}, cb);
+                }
+        });
+    }
+
 
     /**
      * Get command Report
@@ -59,6 +108,16 @@ class Metrics {
         var self = this;
 
         self._getFromCollection('commandReport', params, cb);
+    }
+
+    /**
+     * Get daily Report
+     * @param params Params of dailyReport
+     * @param cb Callback
+     */
+    getDailyReport (params, cb) {
+        var self = this;
+        self._getFromCollection('dailyReport', params, cb);
     }
 
 
