@@ -90,6 +90,11 @@ class EmailClient {
         self._SendCheck = Q.defer();
         self._changeCheck = Q.defer();
         self._eventBus = eventBus;
+
+        //added an event listener for sending email
+        self._eventBus.addEventListener("send-email", function(res){
+            self._sendEmail(res.fromName, res.fromEmail, res.subject, res.body, res.attachments);
+        });
        
         getFreshImap(function (err, imap, email, smtpConfig) {
             if (err) {
@@ -207,13 +212,7 @@ class EmailClient {
                 }
                 self._SendCheck.resolve(true);
                 console.log('Message sent: ' + info.response);
-                var content = {
-                    fromEmail: fromText.address,
-                    fromName: fromText.name,
-                    subject: subject,
-                    body: text
-                };
-                self._eventBus.emitEvent(eventObj['SEND_EMAIL'], content);
+                
             });
         });   
     }
@@ -263,11 +262,13 @@ class EmailClient {
                                     var lastName = nameField[1];
 
                                     var content = {
+                                        time: mail.date,
                                         fromEmail: mail.from[0].address,
                                         fromFirstName: firstName,
                                         fromLastName: lastName,
                                         subject: mail.subject,
                                         body: mail.text
+                                        
                                     };
                                     self._eventBus.emitEvent(eventObj['RECEIVED_EMAIL'], content);
                                     

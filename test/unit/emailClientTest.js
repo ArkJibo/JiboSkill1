@@ -14,6 +14,7 @@ var util = require('../../src/util');
 var emailClient = require('../../src/core/email-client');
 var eventBus = require('../../src/core/event/event-bus');
 var Q = require('q');
+var eventObj = require('../../src/core/event/event');
 
 describe("Email Client test:", function() {
   var email_Client;
@@ -51,22 +52,19 @@ describe("Email Client test:", function() {
         expect(res.fromLastName).to.equal("Kim");
         expect(res.subject).to.equal("Hi");
         expect(res.body).to.equal("Hello\n");
+        expect(res.time).to.not.equal(null);
         listenCheck = true;
       });
 
-      //start send event bus
-      var sendCheck = false;
-      event_Bus.addEventListener("send-email", function(res){
-        //check the content 
-        console.log("Alert: Listen Sent Email!");
-        expect(res.fromEmail).to.equal("kimr07175@gmail.com");
-        expect(res.fromName).to.equal("Roy Kim");
-        expect(res.subject).to.equal("Hi");
-        expect(res.body).to.equal("Hello");
-        sendCheck = true;
-      });
+      var content = {
+          fromEmail: "kimr07175@gmail.com",
+          fromName: "Ben Lee",
+          subject: "Hi",
+          body: "Hello",
+          attachments: null
+      };
+      event_Bus.emitEvent(eventObj['SEND_EMAIL'], content);
 
-      email_Client._sendEmail("Ben Lee", "kimr07175@gmail.com", "Hi", "Hello", null);
       console.log("Alert: Sending a test email");
       //loadsendcheck make sure the email was sent before we check whether we received it 
       email_Client._loadSendCheck().done(function(check){
@@ -77,7 +75,6 @@ describe("Email Client test:", function() {
             //there should be no new email 
             expect(status).to.equal("New mail");
             expect(listenCheck).to.equal(true);
-            expect(sendCheck).to.equal(true);
             //indicating that the test is done 
             done();
           });
