@@ -1,5 +1,6 @@
 'use strict';
 
+var errors = require('../../errors');
 var EventEmitter = require('events');
 var _ = require('lodash');
 
@@ -12,10 +13,11 @@ class EventBus extends EventEmitter {
     /**
      * Register a listener (function) to be triggered by the event
      * @param event String value of the event
+     * @param context The object pointed to by the "this" keyword
      * @param listener The function to be called
      * @throws exception on bad args
      */
-    addEventListener (event, listener) {
+    addEventListener (event, context, listener) {
         var self = this;
 
         var ret = self._validateArgs(event, listener);
@@ -23,16 +25,17 @@ class EventBus extends EventEmitter {
             throw ret;
         }
 
-        self.on(event, listener);
+        self.on(event, listener.bind(context));
     }
 
     /**
      * Register a listener (function) to be triggered by the event ONCE
      * @param event String value of the event
+     * @param context The object pointed to by the "this" keyword
      * @param listener The function to be called
      * @throws exception on bad args
      */
-    addOnceEventListener (event, listener) {
+    addOnceEventListener (event, context, listener) {
         var self = this;
 
         var ret = self._validateArgs(event, listener);
@@ -40,7 +43,7 @@ class EventBus extends EventEmitter {
             throw ret;
         }
 
-        self.once(event, listener);
+        self.once(event, listener.bind(context));
     }
 
     /**
@@ -70,7 +73,7 @@ class EventBus extends EventEmitter {
 
         if (event) {
             if (typeof event !== 'string') {
-                throw 'Bad event passed';
+                throw errors.BAD_EVENT;
             }
             self.removeAllListeners(event);
         } else {
@@ -88,10 +91,10 @@ class EventBus extends EventEmitter {
         var self = this;
 
         if (!event || typeof event !== 'string') {
-            throw 'Bad event passed';
+            throw errors.BAD_EVENT;
         }
 
-        self.emit(event, params);
+        self.emit(event, params, params._cb);
     }
 
     /**
@@ -102,10 +105,10 @@ class EventBus extends EventEmitter {
      */
     _validateArgs (event, listener) {
         if (!event || !listener) {
-            return 'Null or undefined arguments';
+            return 'Null or undefined arguments passed to event bus';
         }
         if (typeof event !== 'string' || typeof listener !== 'function') {
-            return 'Invalid argument types';
+            return 'Invalid argument types passed to event bus';
         }
         return null;
     }
