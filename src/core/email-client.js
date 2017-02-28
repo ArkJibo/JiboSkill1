@@ -92,7 +92,7 @@ class EmailClient {
         self._eventBus = eventBus;
 
         //added an event listener for sending email
-        self._eventBus.addEventListener("send-email", function(res){
+        self._eventBus.addEventListener(eventObj['SEND_EMAIL'], function(res){
             self._sendEmail(res.fromName, res.fromEmail, res.subject, res.body, res.attachments);
         });
        
@@ -183,7 +183,7 @@ class EmailClient {
         };
 
         var files = [];
-        if (attachments !== null){
+        if (attachments){
             for (var i = 0; i < attachments.length; i++){
                 
                 files.push({
