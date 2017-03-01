@@ -6,6 +6,7 @@
 var expect = require('chai').expect;
 var async = require('async');
 var EventBus = require('../../src/core/event/event-bus');
+var errors = require('../../src/errors');
 
 describe('EventBus', function () {
     var eventBus = new EventBus();
@@ -17,8 +18,8 @@ describe('EventBus', function () {
 
     describe('#addEventListener() and addOnceEventListener()', function () {
         it('should work for valid args', function (done) {
-            eventBus.addEventListener('test', function () {});
-            eventBus.addOnceEventListener('test', function () {});
+            eventBus.addEventListener('test', this, function () {});
+            eventBus.addOnceEventListener('test', this, function () {});
             expect(eventBus.listenerCount('test')).to.equal(2);
             done();
         });
@@ -44,8 +45,8 @@ describe('EventBus', function () {
             ];
             async.parallel(funcs, function (err, results) {
                 expect(err).to.not.exist;
-                expect(results[0]).to.equal('Null or undefined arguments');
-                expect(results[1]).to.equal('Null or undefined arguments');
+                expect(results[0]).to.equal('Null or undefined arguments passed to event bus');
+                expect(results[1]).to.equal('Null or undefined arguments passed to event bus');
                 done();
             });
         });
@@ -54,7 +55,7 @@ describe('EventBus', function () {
             var funcs = [
                 function (cb) {
                     try {
-                        eventBus.addEventListener(1, 2);
+                        eventBus.addEventListener(1, 2, 3);
                         cb(null, 'Should hit exception');
                     } catch (e) {
                         cb(null, e);
@@ -62,7 +63,7 @@ describe('EventBus', function () {
                 },
                 function (cb) {
                     try {
-                        eventBus.addOnceEventListener(1, 2);
+                        eventBus.addOnceEventListener(1, 2, 3);
                         cb(null, 'Should hit exception');
                     } catch (e) {
                         cb(null, e);
@@ -71,8 +72,8 @@ describe('EventBus', function () {
             ];
             async.parallel(funcs, function (err, results) {
                 expect(err).to.not.exist;
-                expect(results[0]).to.equal('Invalid argument types');
-                expect(results[1]).to.equal('Invalid argument types');
+                expect(results[0]).to.equal('Invalid argument types passed to event bus');
+                expect(results[1]).to.equal('Invalid argument types passed to event bus');
                 done();
             });
         });
@@ -109,8 +110,8 @@ describe('EventBus', function () {
             ];
             async.parallel(funcs, function (err, results) {
                 expect(err).to.not.exist;
-                expect(results[0]).to.equal('Null or undefined arguments');
-                expect(results[1]).to.equal('Invalid argument types');
+                expect(results[0]).to.equal('Null or undefined arguments passed to event bus');
+                expect(results[1]).to.equal('Invalid argument types passed to event bus');
                 done();
             });
         });
@@ -142,7 +143,7 @@ describe('EventBus', function () {
                 eventBus.clear(1);
                 done('Should hit exception');
             } catch (e) {
-                expect(e).to.equal('Bad event passed');
+                expect(e).to.equal(errors.BAD_EVENT );
                 done();
             }
         });
@@ -170,7 +171,7 @@ describe('EventBus', function () {
                 eventBus.emitEvent(1);
                 done('Should hit exception');
             } catch (e) {
-                expect(e).to.equal('Bad event passed');
+                expect(e).to.equal(errors.BAD_EVENT);
                 done();
             }
         });
@@ -185,13 +186,13 @@ describe('EventBus', function () {
 
         it('should work for null args', function (done) {
             var ret = eventBus._validateArgs(null, null);
-            expect(ret).to.equal('Null or undefined arguments');
+            expect(ret).to.equal('Null or undefined arguments passed to event bus');
             done();
         });
 
         it('should work for bad args', function (done) {
             var ret = eventBus._validateArgs(1, 3);
-            expect(ret).to.equal('Invalid argument types');
+            expect(ret).to.equal('Invalid argument types passed to event bus');
             done();
         });
     });

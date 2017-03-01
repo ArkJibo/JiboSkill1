@@ -9,23 +9,24 @@ var fs = require('fs');
 var async = require('async');
 var moment = require('moment');
 var Model = require('../../src/model');
-var Errors = require('../../src/errors');
+var errors = require('../../src/errors');
 var expect = require('chai').expect;
 var util = require('../../src/util');
 var _ = require('lodash');
 
 describe('Model', function () {
     var model = new Model();
-    var tempFiles = {
-        'events': './db/test-events.db',
-        'reminderQueue': './db/test-reminderQueue.db',
-        'inventory': './db/test-inventory.db',
-        'patient': './db/test-patient.db',
-        'people': './db/test-people.db',
-        'media': './db/test-media.db',
-        'entertainment': './db/test-entertainment.db',
-        'voice': './db/test-voice.db'
-    };
+    var tempFiles = {};
+    tempFiles[util.COLLECTION_TYPE.EVENTS] = './db/test-events.db';
+    tempFiles[util.COLLECTION_TYPE.REMINDER_QUEUE] = './db/test-reminderQueue.db';
+    tempFiles[util.COLLECTION_TYPE.INVENTORY] = './db/test-inventory.db';
+    tempFiles[util.COLLECTION_TYPE.PATIENT] = './db/test-patient.db';
+    tempFiles[util.COLLECTION_TYPE.PEOPLE] = './db/test-people.db';
+    tempFiles[util.COLLECTION_TYPE.MEDIA] = './db/test-media.db';
+    tempFiles[util.COLLECTION_TYPE.ENTERTAINMENT] = './db/test-entertainment.db';
+    tempFiles[util.COLLECTION_TYPE.VOICE] = './db/test-voice.db';
+    tempFiles[util.COLLECTION_TYPE.CREDS] = './db/test-credentials.db';
+    tempFiles[util.COLLECTION_TYPE.EMAIL] = './db/test-emails.db';
 
     var cleanup = function (cb) {
         //  Delete the temp db files
@@ -231,7 +232,7 @@ describe('Model', function () {
             }], function (err, docs) {
                 expect(err).to.not.exist;
 
-                model.getNextMatchingEvent(util.JIBO_EVENT_TYPE.APPOINTMENT, {
+                model.getNextMatchingEvent(util.EVENT_TYPE.APPOINTMENT, {
                     name: 'water'
                 }, function (err, doc) {
                     expect(err).to.not.exist;
@@ -251,35 +252,55 @@ describe('Model', function () {
         });
     });
 
-    describe('#getMatchingEvents()', function () {
+    describe('#getMatchingCollectionDocs()', function () {
         it('should return proper matches', function (done) {
             //  Manually insert docs
             model._db.events.insert([{
                 type: 'hype',
-                level: 25
+                level: 25,
+                fire: 5
             }, {
                 type: 'hype',
-                level: 10
+                level: 10,
+                fire: 15
+            }, {
+                type: 'hype',
+                level: 30,
+                fire: 20
             }, {
                 type: 'pipe',
-                level: 30
+                level: 9000,
+                fire: 1
             }], function (err, docs) {
                 expect(err).to.not.exist;
 
-                model.getMatchingEvents({
+                model.getMatchingCollectionDocs('events', {
                     type: 'hype',
                     _custom: [{
                         key: 'level',
                         op: 'gt',
-                        value: 20
+                        value: 10
+                    }, {
+                        key: 'fire',
+                        op: 'lte',
+                        value: 5
                     }]
                 }, function (err, docs) {
                     expect(err).to.not.exist;
                     expect(docs.length).to.equal(1);
                     expect(docs[0].type).to.equal('hype');
                     expect(docs[0].level).to.equal(25);
+                    expect(docs[0].fire).to.equal(5);
                     done();
                 });
+            });
+        });
+
+        it('should return INVALID_COLLECTION error', function (done) {
+            model.getMatchingCollectionDocs('random', {}, function (err, docs) {
+                expect(err).to.equal(errors.INVALID_COLLECTION);
+                expect(docs).to.not.exist;
+                done();
             });
         });
     });
@@ -335,9 +356,9 @@ describe('Model', function () {
         });
 
         it('should not break if no reminders', function (done) {
-            model.getNextReminder(function (err, doc) {
-                assert.equal(err, null);
-                assert.equal(doc, undefined);
+            model.getNextReminder(function (err, docs) {
+                expect(err).to.not.exist;
+                expect(docs.length).to.equal(0);
                 done();
             });
         });
@@ -368,421 +389,9 @@ describe('Model', function () {
                 expect(err).to.not.exist;
 
                 model.setReminderViewed('asdfasdf', function (err, numAffected, affectedDocs) {
-                    expect(err).to.equal(Errors.INVALID_DOC_ID);
+                    expect(err).to.equal(errors.INVALID_DOC_ID);
                     expect(numAffected).to.not.exist;
                     expect(affectedDocs).to.not.exist;
-                    done();
-                });
-            });
-        });
-    });
-
-    describe('#getMatchingInventory()', function () {
-        it('should get correct item', function (done) {
-            model._db.inventory.insert([{
-                type: 'box',
-                amount: 10
-            }, {
-                type: 'big box',
-                amount: 4
-            }, {
-                type: 'mini box',
-                amount: 7
-            }], function (err, docs) {
-                expect(err).to.not.exist;
-
-                model.getMatchingInventory({
-                    _custom: [{
-                        key: 'amount',
-                        op: 'lte',
-                        value: 4
-                    }]
-                }, function (err, docs) {
-                    expect(err).to.not.exist;
-                    expect(docs.length).to.equal(1);
-                    expect(docs[0].type).to.equal('big box');
-                    expect(docs[0].amount).to.equal(4);
-                    done();
-                });
-            });
-        });
-    });
-
-    describe('#getMatchingPatientInfo()', function () {
-        it('should get docs matching the params', function (done) {
-            //  Manually insert docs
-            model._db.patient.insert([{
-                type: 'health',
-                subType: 'weight'
-            }, {
-                type: 'health',
-                subType: 'blood pressure'
-            }], function (err, docs) {
-                assert.equal(err, null);
-
-                model.getMatchingPatientInfo({
-                    type: 'health'
-                }, function (err, docs) {
-                    assert.equal(err, null);
-                    assert.equal(docs.length, 2);
-                    done();
-                });
-            });
-        });
-
-        it('should get no docs matching the params', function (done) {
-            //  Manually insert docs
-            model._db.patient.insert([{
-                type: 'health'
-            }, {
-                random: 'health'
-            }], function (err, docs) {
-                assert.equal(err, null);
-
-                model.getMatchingPatientInfo({
-                    random: 'param'
-                }, function (err, docs) {
-                    assert.equal(err, null);
-                    assert.equal(docs.length, 0);
-                    done();
-                });
-            });
-        });
-    });
-
-    describe('#getMatchingPersonInfo()', function () {
-        it('should get person without custom params', function (done) {
-            //  Manually insert docs
-            model._db.people.insert([{
-                first: 'Eric',
-                last: 'Dong'
-            }, {
-                first: 'Dave',
-                last: 'Barnhart'
-            }], function (err, docs) {
-                expect(err).to.not.exist;
-
-                model.getMatchingPersonInfo({
-                    first: 'Eric'
-                }, function (err, docs) {
-                    expect(err).to.not.exist;
-                    expect(docs.length).to.equal(1);
-                    done();
-                });
-            });
-        });
-
-        it('should get person with custom params', function (done) {
-            //  Manually insert docs
-            model._db.people.insert([{
-                first: 'Eric',
-                closeness: 4
-            }, {
-                first: 'Eric',
-                closeness: 8
-            }, {
-                first: 'Dave',
-                closeness: 10
-            }, {
-                first: 'Dave',
-                closeness: 2
-            }], function (err, docs) {
-                expect(err).to.not.exist;
-
-                var funcs = [
-                    function (cb) {
-                        model.getMatchingPersonInfo({
-                            first: 'Eric',
-                            _custom: [{
-                                key: 'closeness',
-                                op: 'gte',
-                                value: 5
-                            }]
-                        }, function (err, docs) {
-                            expect(err).to.not.exist;
-                            expect(docs.length).to.equal(1);
-                            cb();
-                        });
-                    },
-                    function (cb) {
-                        model.getMatchingPersonInfo({
-                            _custom: [{
-                                key: 'closeness',
-                                op: 'lte',
-                                value: 8
-                            }]
-                        }, function (err, docs) {
-                            expect(err).to.not.exist;
-                            expect(docs.length).to.equal(3);
-                            cb();
-                        });
-                    }
-                ];
-
-                async.parallel(funcs, function () {
-                    done();
-                });
-            });
-        });
-    });
-
-    describe('#getMatchingMedia()', function () {
-        it('should get media without custom params', function (done) {
-            //  Manually insert
-            model._db.media.insert([{
-                type: 'photo',
-                name: 'bottle'
-            }, {
-                type: 'photo',
-                name: 'lamp'
-            }], function (err, docs) {
-                expect(err).to.not.exist;
-
-                model.getMatchingMedia({
-                    type: 'photo'
-                }, function (err, docs) {
-                    expect(err).to.not.exist;
-                    expect(docs.length).to.equal(2);
-                    done();
-                });
-            });
-        });
-
-        it('should get media with viewed custom params', function (done) {
-            //  Manually insert
-            model._db.media.insert([{
-                type: 'photo1',
-                timesViewed: 1
-            }, {
-                type: 'photo2',
-                timesViewed: 2
-            }, {
-                type: 'photo3',
-                timesViewed: 3
-            }, {
-                type: 'photo4',
-                timesViewed: 4
-            }], function (err, docs) {
-                expect(err).to.not.exist;
-
-                model.getMatchingMedia({
-                    _custom: [{
-                        key: 'timesViewed',
-                        op: 'gte',
-                        value: 2
-                    }]
-                }, function (err, docs) {
-                    expect(err).to.not.exist;
-                    expect(docs.length).to.equal(3);
-
-                    model.getMatchingMedia({
-                        _custom: [{
-                            key: 'timesViewed',
-                            op: 'gte',
-                            value: 2
-                        }, {
-                            key: 'timesViewed',
-                            op: 'lte',
-                            value: 3
-                        }]
-                    }, function (err, docs) {
-                        expect(err).to.not.exist;
-                        expect(docs.length).to.equal(2);
-                        done();
-                    });
-                });
-            });
-        });
-
-        it('should get media with timeTaken custom params', function (done) {
-            //  Manually insert
-            model._db.media.insert([{
-                type: 'photo1',
-                timeTaken: moment(presentTime).add(1, 'days').toISOString()
-            }, {
-                type: 'photo2',
-                timeTaken: moment(presentTime).add(2, 'days').toISOString()
-            }, {
-                type: 'photo3',
-                timeTaken: moment(presentTime).add(3, 'days').toISOString()
-            }, {
-                type: 'photo4',
-                timeTaken: moment(presentTime).add(4, 'days').toISOString()
-            }], function (err, docs) {
-                expect(err).to.not.exist;
-
-                model.getMatchingMedia({
-                    _custom: [{
-                        key: 'timeTaken',
-                        op: 'lte',
-                        value: moment(presentTime).add(3, 'days').toISOString()
-                    }]
-                }, function (err, docs) {
-                    expect(err).to.not.exist;
-                    expect(docs.length).to.equal(3);
-
-                    model.getMatchingMedia({
-                        _custom: [{
-                            key: 'timeTaken',
-                            op: 'lte',
-                            value: moment(presentTime).add(4, 'days').toISOString()
-                        }, {
-                            key: 'timeTaken',
-                            op: 'gt',
-                            value: moment(presentTime).add(2, 'days').toISOString()
-                        }]
-                    }, function (err, docs) {
-                        expect(err).to.not.exist;
-                        expect(docs.length).to.equal(2);
-                        done();
-                    });
-                });
-            });
-        });
-    });
-
-    describe('#getMatchingEntertainment()', function () {
-        beforeEach(function (done) {
-            //  Push in some entertainment docs
-            var entertain = function (params, cb) {
-                model._db.entertainment.insert(params, function (err, docs) {
-                    cb(err);
-                });
-            };
-
-            var funcs = [];
-            var extra = ['typeA', 'typeB'];
-            for (var i = 0; i < 10; i++) {
-                funcs.push(entertain.bind(null, {
-                    extra: extra[Math.floor(i / 5)],
-                    rating: i,
-                    lastUsed: moment(presentTime).subtract(i, 'days').toISOString()
-                }));
-            }
-
-            async.parallel(funcs, function (err) {
-                expect(err).to.not.exist;
-                done();
-            });
-        });
-
-
-        it('should get entertainment with no custom params', function (done) {
-            model.getMatchingEntertainment({
-                extra: 'typeA'
-            }, function (err, doc, numDocs) {
-                expect(err).to.not.exist;
-                expect(doc.extra).to.equal('typeA');
-                expect(numDocs).to.equal(5);
-                done();
-            });
-        });
-
-        it('should get entertainment with rating custom params', function (done) {
-            model.getMatchingEntertainment({
-                extra: 'typeB',
-                _custom: [{
-                    key: 'rating',
-                    op: 'gte',
-                    value: 6
-                }]
-            }, function (err, doc, numDocs) {
-                expect(err).to.not.exist;
-                expect(doc.extra).to.equal('typeB');
-                expect(doc.rating).to.be.at.least(6);
-                expect(numDocs).to.equal(4);
-
-                model.getMatchingEntertainment({
-                    extra: 'typeB',
-                    _custom: [{
-                        key: 'rating',
-                        op: 'gte',
-                        value: 6
-                    }, {
-                        key: 'rating',
-                        op: 'lte',
-                        value: 8
-                    }]
-                }, function (err, doc, numDocs) {
-                    expect(err).to.not.exist;
-                    expect(doc.extra).to.equal('typeB');
-                    expect(doc.rating).to.be.at.least(6).and.at.most(8);
-                    expect(numDocs).to.equal(3);
-                    done();
-                });
-            });
-        });
-
-        it('should get entertainment with lastUsed custom params', function (done) {
-            model.getMatchingEntertainment({
-                extra: 'typeA',
-                _custom: [{
-                    key: 'lastUsed',
-                    op: 'lte',
-                    value: moment(presentTime).subtract(3, 'days').toISOString()
-                }]
-            }, function (err, doc, numDocs) {
-                expect(err).to.not.exist;
-                expect(doc.extra).to.equal('typeA');
-                expect(numDocs).to.equal(2);
-
-                model.getMatchingEntertainment({
-                    extra: 'typeB',
-                    _custom: [{
-                        key: 'lastUsed',
-                        op: 'lte',
-                        value: moment(presentTime).subtract(6, 'days').toISOString()
-                    }, {
-                        key: 'lastUsed',
-                        op: 'gte',
-                        value: moment(presentTime).subtract(8, 'days').toISOString()
-                    }]
-                }, function (err, doc, numDocs) {
-                    expect(err).to.not.exist;
-                    expect(doc.extra).to.equal('typeB');
-                    expect(numDocs).to.equal(3);
-                    done();
-                });
-            });
-        });
-
-        it('should get entertainment with both lastUsed and rating', function (done) {
-            model.getMatchingEntertainment({
-                _custom: [{
-                    key: 'lastUsed',
-                    op: 'lte',
-                    value: moment(presentTime).subtract(4, 'days').toISOString()
-                }, {
-                    key: 'rating',
-                    op: 'gte',
-                    value: 7
-                }]
-            }, function (err, doc, numDocs) {
-                expect(err).to.not.exist;
-                expect(numDocs).to.equal(3);
-                done();
-            });
-        });
-    });
-
-    describe('#getMatchingVoice()', function () {
-        it('should get correct voice', function (done) {
-            //  Manually insert
-            model._db.voice.insert([{
-                type: 'greeting',
-                line: 'hihihihihi'
-            }, {
-                type: 'goodbye',
-                line: 'byebyebyebyebye'
-            }], function (err, docs) {
-                expect(err).to.not.exist;
-
-                model.getMatchingVoice({
-                    type: 'greeting'
-                }, function (err, docs) {
-                    expect(err).to.not.exist;
-                    expect(docs.length).to.equal(1);
-                    expect(docs[0].line).to.equal('hihihihihi');
                     done();
                 });
             });
@@ -821,7 +430,7 @@ describe('Model', function () {
         });
 
         it('should update by replacing matches with new doc', function (done) {
-            model.updateCollection(util.JIBO_COLLECTION_TYPE.EVENTS, {
+            model.updateCollection(util.COLLECTION_TYPE.EVENTS, {
                 key1: 'a'
             }, {
                 replace1: 'z',
@@ -842,7 +451,7 @@ describe('Model', function () {
         });
 
         it('should update by performing ops', function (done) {
-            model.updateCollection(util.JIBO_COLLECTION_TYPE.EVENTS, {
+            model.updateCollection(util.COLLECTION_TYPE.EVENTS, {
                 _custom: [{
                     key: 'key2',
                     op: 'gt',
@@ -885,7 +494,7 @@ describe('Model', function () {
             }], function (err, docs) {
                 expect(err).to.not.exist;
 
-                model.removeFromCollection(util.JIBO_COLLECTION_TYPE.EVENTS, {
+                model.removeFromCollection(util.COLLECTION_TYPE.EVENTS, {
                     key: 'value'
                 }, function (err, numRemoved) {
                     expect(err).to.not.exist;
@@ -907,7 +516,7 @@ describe('Model', function () {
             }], function (err, docs) {
                 expect(err).to.not.exist;
 
-                model.removeFromCollection(util.JIBO_COLLECTION_TYPE.EVENTS, {}, function (err, numRemoved) {
+                model.removeFromCollection(util.COLLECTION_TYPE.EVENTS, {}, function (err, numRemoved) {
                     expect(err).to.not.exist;
                     expect(numRemoved).to.equal(4);
                     done();
@@ -916,10 +525,10 @@ describe('Model', function () {
         });
     });
 
-    describe('#addNewEvent()', function () {
-        it('should succeed with repeatInfo', function (done) {
-            model.addNewEvent({
-                type: 'appointment',
+    describe('#addNewCollectionDoc()', function () {
+        it('should succeed with events and repeatInfo', function (done) {
+            model.addNewCollectionDoc(util.COLLECTION_TYPE.EVENTS, 'default', {
+                type: util.EVENT_TYPE.APPOINTMENT,
                 subtype: 'medical',
                 time: presentTime,
                 repeatInfo: {
@@ -942,71 +551,41 @@ describe('Model', function () {
             });
         });
 
-        it('verification error should be passed along correctly', function (done) {
-            model.addNewEvent({
-                random: 'value'
-            }, function (err) {
-                expect(err).to.equal(Errors.KEY_MISSING);
-                done();
-            });
-        });
-    });
-
-    describe('#addNewInventory()', function () {
-        var supply = {
-            type: 'supply',
-            subtype: 'grocery',
-            name: 'broccoli',
-            amount: 5
-        };
-        var record = {
-            type: 'record',
-            date: presentTime,
-            purchased: [{
+        it('should succeed with inventory and correct params for supply', function (done) {
+            model.addNewCollectionDoc(util.COLLECTION_TYPE.INVENTORY, 'supply', {
+                type: 'grocery',
                 name: 'broccoli',
                 amount: 5
-            }]
-        };
-
-        it('should succeed with correct params for supply', function (done) {
-            model.addNewInventory(supply, function (err, supp) {
+            }, function (err, docs) {
                 expect(err).to.not.exist;
-                expect(supp).to.exist;
+                expect(docs).to.exist;
                 done();
             });
         });
 
-        it('should succeed with correct params for record', function (done) {
-            model.addNewInventory(record, function (err, supp) {
+        it('should succeed with inventory and correct params for record', function (done) {
+            model.addNewCollectionDoc(util.COLLECTION_TYPE.INVENTORY, 'record', {
+                type: 'grocery',
+                date: presentTime,
+                purchased: [{
+                    name: 'broccoli',
+                    amount: 5
+                }]
+            }, function (err, docs) {
                 expect(err).to.not.exist;
-                expect(supp).to.exist;
+                expect(docs).to.exist;
                 done();
             });
         });
 
-        it('handle incorrect item type', function (done) {
-            model.addNewInventory({
-                type: 'wat'
-            }, function (err, supp) {
-                expect(err).to.equal(Errors.INVALID_INVENTORY);
-                expect(supp).to.not.exist;
+        it('should handle incorrect item type for inventory', function (done) {
+            model.addNewCollectionDoc(util.COLLECTION_TYPE.INVENTORY, 'wat', {}, function (err, docs) {
+                expect(err).to.equal(errors.INVALID_INVENTORY);
+                expect(docs).to.not.exist;
                 done();
             });
         });
 
-        it('verification error should be passed along correctly', function (done) {
-            model.addNewInventory({
-                type: 'record',
-                random: 'value'
-            }, function (err, supp) {
-                expect(err).to.equal(Errors.KEY_MISSING);
-                expect(supp).to.not.exist;
-                done();
-            });
-        });
-    });
-
-    describe('#addNewReminder()', function () {
         it('should add new Reminder to collection', function (done) {
             //  Manually insert an event
             model._db.events.insert({
@@ -1014,7 +593,7 @@ describe('Model', function () {
             }, function (err, docs) {
                 expect(err).to.not.exist;
 
-                model.addNewReminder({
+                model.addNewCollectionDoc(util.COLLECTION_TYPE.REMINDER_QUEUE, 'default', {
                     type: 'events',
                     event: {
                         _id: 'alksdjhfi3j928htger'
@@ -1027,43 +606,41 @@ describe('Model', function () {
             });
         });
 
-        it('should fail for missing key', function (done) {
-            model.addNewReminder({
+        it('should fail for missing key in reminder', function (done) {
+            model.addNewCollectionDoc(util.COLLECTION_TYPE.REMINDER_QUEUE, 'default', {
                 why: 'tho'
             }, function (err, doc) {
-                expect(err).to.equal(Errors.KEY_MISSING);
+                expect(err).to.equal(errors.KEY_MISSING);
                 expect(doc).to.not.exist;
                 done();
             });
         });
 
-        it('should fail for bad _id', function (done) {
+        it('should fail for bad _id in reminder', function (done) {
             //  Manually insert an event
             model._db.events.insert({
                 _id: 'alksdjhfi3j928htger'
             }, function (err, docs) {
                 expect(err).to.not.exist;
 
-                model.addNewReminder({
+                model.addNewCollectionDoc(util.COLLECTION_TYPE.REMINDER_QUEUE, 'default', {
                     type: 'events',
                     event: {
                         _id: 'such a terrible id'
                     },
                     time: presentTime
                 }, function (err, doc) {
-                    expect(err).to.equal(Errors.BAD_DOC_ID);
+                    expect(err).to.equal(errors.BAD_DOC_ID);
                     expect(doc).to.not.exist;
                     done();
                 });
             });
         });
-    });
 
-    describe('#addNewPatientInfo()', function () {
-        it('should add new info', function (done) {
-            model.addNewPatientInfo({
+        it('should add new patient info', function (done) {
+            model.addNewCollectionDoc(util.COLLECTION_TYPE.PATIENT, 'default', {
                 type: 'favorite',
-                subType: 'game',
+                subtype: 'game',
                 value: 'hopscotch'
             }, function (err, doc) {
                 expect(err).to.not.exist;
@@ -1071,20 +648,8 @@ describe('Model', function () {
             });
         });
 
-        it('should fail to add info', function (done) {
-            model.addNewPatientInfo({
-                random: 'nonsense'
-            }, function (err, doc) {
-                expect(err).to.equal(Errors.KEY_MISSING);
-                expect(doc).to.not.exist;
-                done();
-            });
-        });
-    });
-
-    describe('#addNewPerson()', function () {
         it('should add new person', function (done) {
-            model.addNewPerson({
+            model.addNewCollectionDoc(util.COLLECTION_TYPE.PEOPLE,'default',  {
                 first: 'Eric',
                 last: 'Dong',
                 relationship: 'bff forever',
@@ -1096,20 +661,8 @@ describe('Model', function () {
             });
         });
 
-        it('should fail to add person', function (done) {
-            model.addNewPerson({
-                utter: 'nonsense'
-            }, function (err, doc) {
-                expect(err).to.equal(Errors.KEY_MISSING);
-                expect(doc).to.not.exist;
-                done();
-            });
-        });
-    });
-
-    describe('#addNewMedia()', function () {
         it('should add new media', function (done) {
-            model.addNewMedia({
+            model.addNewCollectionDoc(util.COLLECTION_TYPE.MEDIA, 'default', {
                 type: 'photo',
                 occasion: 'wedding',
                 file: 'media/music/banana.mp3',
@@ -1120,20 +673,8 @@ describe('Model', function () {
             });
         });
 
-        it('should fail to add media', function (done) {
-            model.addNewMedia({
-                utter: 'nonsense'
-            }, function (err, doc) {
-                expect(err).to.equal(Errors.KEY_MISSING);
-                expect(doc).to.not.exist;
-                done();
-            });
-        });
-    });
-
-    describe('#addNewEntertainment()', function () {
         it('should add new entertainment', function (done) {
-            model.addNewEntertainment({
+            model.addNewCollectionDoc(util.COLLECTION_TYPE.ENTERTAINMENT, 'default', {
                 type: 'riddle',
                 dateAdded: presentTime,
                 lastUsed: presentTime,
@@ -1144,20 +685,8 @@ describe('Model', function () {
             });
         });
 
-        it('should fail to add entertainment', function (done) {
-            model.addNewEntertainment({
-                not: 'entertaining'
-            }, function (err, doc) {
-                expect(err).to.equal(Errors.KEY_MISSING);
-                expect(doc).to.not.exist;
-                done();
-            });
-        });
-    });
-
-    describe('#addNewVoiceLine()', function () {
         it('should add new voice line', function (done) {
-            model.addNewVoiceLine({
+            model.addNewCollectionDoc(util.COLLECTION_TYPE.VOICE, 'default', {
                 type: 'greeting',
                 line: 'Greetings adventurer!',
                 dateAdded: presentTime
@@ -1167,12 +696,50 @@ describe('Model', function () {
             });
         });
 
-        it('should fail to add voice', function (done) {
-            model.addNewVoiceLine({
-                bad: 'voice'
-            }, function (err, doc) {
-                expect(err).to.equal(Errors.KEY_MISSING);
-                expect(doc).to.not.exist;
+        it('should add email creds', function (done) {
+            model.addNewCollectionDoc(util.COLLECTION_TYPE.CREDS, 'default', {
+                type: 'email-login',
+                email: 'random@gmail.com',
+                password: 'password'
+            }, function (err, docs) {
+                expect(err).to.not.exist;
+                expect(docs[0].email).to.equal('random@gmail.com');
+                expect(docs[0].password).to.equal('password');
+                done();
+            });
+        });
+
+        it('should add update-password creds and not allow a second one', function (done) {
+            var doc = {
+                type: 'update-password',
+                password: 'password'
+            };
+
+            model.addNewCollectionDoc(util.COLLECTION_TYPE.CREDS, 'default', doc, function (err, docs) {
+                expect(err).to.not.exist;
+                expect(docs[0].password).to.equal('password');
+
+                model.addNewCollectionDoc(util.COLLECTION_TYPE.CREDS, 'default', doc, function (err, docs) {
+                    expect(err).to.equal('Error: Can\'t add a second update-password doc');
+                    expect(docs).to.not.exist;
+                    done();
+                });
+            });
+        });
+
+        it('should store new email', function (done) {
+            model.addNewCollectionDoc(util.COLLECTION_TYPE.EMAIL, 'default', {
+                fromEmail: 'rock@gmail.com',
+                fromFirstName: 'Dwayne',
+                subject: 'I am The Rock',
+                body: '',
+                date: presentTime
+            }, function (err, docs) {
+                expect(err).to.not.exist;
+                expect(docs[0].fromEmail).to.equal('rock@gmail.com');
+                expect(docs[0].fromFirstName).to.equal('Dwayne');
+                expect(docs[0].subject).to.equal('I am The Rock');
+                expect(docs[0].date).to.equal(moment(presentTime).toISOString());
                 done();
             });
         });
@@ -1199,7 +766,7 @@ describe('Model', function () {
             model._verifyCollectionParams('events', 'default', {
                 time: 'winning'
             }, function (err, params) {
-                expect(err).to.equal(Errors.INVALID_DATE);
+                expect(err).to.equal(errors.INVALID_DATE);
                 expect(params).to.not.exist;
                 done();
             });
@@ -1209,7 +776,7 @@ describe('Model', function () {
             model._verifyCollectionParams('events', 'default', {
                 type: 'winning'
             }, function (err, params) {
-                expect(err).to.equal(Errors.KEY_MISSING);
+                expect(err).to.equal(errors.KEY_MISSING);
                 expect(params).to.not.exist;
                 done();
             });
@@ -1217,7 +784,7 @@ describe('Model', function () {
 
         it('should fail because bad collection', function (done) {
             model._verifyCollectionParams('mouse', 'default', {}, function (err, params) {
-                expect(err).to.equal(Errors.INVALID_COLLECTION);
+                expect(err).to.equal(errors.INVALID_COLLECTION);
                 expect(params).to.not.exist;
                 done();
             });
@@ -1225,7 +792,7 @@ describe('Model', function () {
 
         it('should fail because bad docType', function (done) {
             model._verifyCollectionParams('events', 'badbadbad', {}, function (err) {
-                expect(err).to.equal(Errors.INVALID_DOCTYPE);
+                expect(err).to.equal(errors.INVALID_DOCTYPE);
                 done();
             });
         });
@@ -1267,7 +834,7 @@ describe('Model', function () {
                 hi: 'hi'
             }, function (err, doc) {
                 assert.equal(err, null);
-                expect(doc).to.include.keys('hi');
+                expect(doc[0]).to.include.keys('hi');
                 done();
             });
         });

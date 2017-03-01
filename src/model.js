@@ -5,40 +5,48 @@
 var Datastore = require('nedb');
 var moment = require('moment');
 var util = require('./util');
-var Errors = require('./errors');
+var errors = require('./errors');
 var async = require('async');
 var _ = require('lodash');
+var crypto = require('crypto');
 
 var minRepeatInfoKeys = ['startTime', 'interval', 'endTime'];
 var minReminderInfoKeys = ['numReminders', 'interval', 'startTime'];
-var minCollectionKeys = {
-    'events': {
-        'default': ['type', 'subtype', 'time', 'reminderInfo']
-    },
-    'inventory': {
-        'supply': ['type', 'name', 'amount'],
-        'record': ['type', 'date', 'purchased']
-    },
-    'reminderQueue': {
-        'default': ['type', 'event', 'time']
-    },
-    'patient': {
-        'default': ['type', 'subType', 'value']
-    },
-    'people': {
-        'default': ['first', 'last', 'relationship', 'closeness', 'birthday']
-    },
-    'media': {
-        'default': ['type', 'occasion', 'file', 'timesViewed']
-    },
-    'entertainment': {
-        'default': ['type', 'dateAdded', 'lastUsed', 'rating']
-    },
-    'voice': {
-        'default': ['type', 'line', 'dateAdded']
-    }
+
+var minCollectionKeys = {};
+minCollectionKeys[util.COLLECTION_TYPE.EVENTS] = {
+    default: ['type', 'subtype', 'time', 'reminderInfo']
 };
-var dateKeys = ['time', 'lastTaken', 'startTime', 'endTime', 'birthday', 'dateAdded', 'lastUsed'];
+minCollectionKeys[util.COLLECTION_TYPE.INVENTORY] = {
+    supply: ['type', 'name', 'amount'],
+    record: ['type', 'date', 'purchased']
+};
+minCollectionKeys[util.COLLECTION_TYPE.REMINDER_QUEUE] = {
+    default: ['type', 'event', 'time']
+};
+minCollectionKeys[util.COLLECTION_TYPE.PATIENT] = {
+    default: ['type', 'subtype', 'value']
+};
+minCollectionKeys[util.COLLECTION_TYPE.PEOPLE] = {
+    default: ['first', 'last', 'relationship', 'closeness', 'birthday']
+};
+minCollectionKeys[util.COLLECTION_TYPE.MEDIA] = {
+    default: ['type', 'occasion', 'file', 'timesViewed']
+};
+minCollectionKeys[util.COLLECTION_TYPE.ENTERTAINMENT] = {
+    default: ['type', 'dateAdded', 'lastUsed', 'rating']
+};
+minCollectionKeys[util.COLLECTION_TYPE.VOICE] = {
+    default: ['type', 'line', 'dateAdded']
+};
+minCollectionKeys[util.COLLECTION_TYPE.CREDS] = {
+    default: ['type', 'password']
+};
+minCollectionKeys[util.COLLECTION_TYPE.EMAIL] = {
+    default: ['fromEmail', 'fromFirstName', 'subject', 'body', 'date']
+};
+
+var dateKeys = ['time', 'date', 'lastTaken', 'startTime', 'endTime', 'birthday', 'dateAdded', 'lastUsed'];
 var timeModifiers = {
     h: 'hours',
     d: 'days',
@@ -61,14 +69,16 @@ class Model {
 
         //  Initialize collections
         self._db = {};
-        self._db.events = new Datastore('./db/events.db');
-        self._db.reminderQueue = new Datastore('./db/reminderQueue.db');
-        self._db.inventory = new Datastore('./db/inventory.db');
-        self._db.patient = new Datastore('./db/patient.db');
-        self._db.people = new Datastore('./db/people.db');
-        self._db.media = new Datastore('./db/media.db');
-        self._db.entertainment = new Datastore('./db/entertainment.db');
-        self._db.voice = new Datastore('./db/voice.db');
+        self._db[util.COLLECTION_TYPE.EVENTS] = new Datastore('./db/events.db');
+        self._db[util.COLLECTION_TYPE.REMINDER_QUEUE] = new Datastore('./db/reminderQueue.db');
+        self._db[util.COLLECTION_TYPE.INVENTORY] = new Datastore('./db/inventory.db');
+        self._db[util.COLLECTION_TYPE.PATIENT] = new Datastore('./db/patient.db');
+        self._db[util.COLLECTION_TYPE.PEOPLE] = new Datastore('./db/people.db');
+        self._db[util.COLLECTION_TYPE.MEDIA] = new Datastore('./db/media.db');
+        self._db[util.COLLECTION_TYPE.ENTERTAINMENT] = new Datastore('./db/entertainment.db');
+        self._db[util.COLLECTION_TYPE.VOICE] = new Datastore('./db/voice.db');
+        self._db[util.COLLECTION_TYPE.CREDS] = new Datastore('./db/credentials.db');
+        self._db[util.COLLECTION_TYPE.EMAIL] = new Datastore('./db/emails.db');
 
         Object.keys(self._db).forEach(function(col) {
             self._db[col].loadDatabase();
@@ -134,7 +144,7 @@ class Model {
         });
 
         //  Get all events of the day
-        self._getFromCollectionSorted('events', params, {
+        self._getFromCollectionSorted(util.COLLECTION_TYPE.EVENTS, params, {
             time: 1
         }, cb);
     }
@@ -146,8 +156,8 @@ class Model {
     getNextReminder (cb) {
         var self = this;
 
-        //  First remove any expired reminders that have been viewed
-        self._removeFromCollection('reminderQueue', {
+        //  First remove any expired reminders
+        self._removeFromCollection(util.COLLECTION_TYPE.REMINDER_QUEUE, {
             time: {
                 $lte: moment().toISOString()
             },
@@ -158,12 +168,12 @@ class Model {
             } else {
                 //  Get all reminders and sort
                 self._getFromCollectionSorted(
-                    'reminderQueue',
+                    util.COLLECTION_TYPE.REMINDER_QUEUE,
                     {},
                     { time: 1 },    //  1 means ascending order
                     function (err, docs) {
                         //  Return earliest reminder
-                        cb(err, docs.length === 0 ? null : docs[0]);
+                        cb(err, docs.length === 0 ? docs : docs[0]);
                     }
                 );
             }
@@ -179,14 +189,14 @@ class Model {
         var self = this;
 
         //  Verify the ID is legit
-        self._getFromCollection('reminderQueue', {
+        self._getFromCollection(util.COLLECTION_TYPE.REMINDER_QUEUE, {
             _id: id
         }, function (err, docs) {
             if (err || docs.length === 0) {
-                cb(err || Errors.INVALID_DOC_ID);
+                cb(err || errors.INVALID_DOC_ID);
             } else {
                 //  Update the flag
-                self._updateInCollection('reminderQueue', {
+                self._updateInCollection(util.COLLECTION_TYPE.REMINDER_QUEUE, {
                     _id: id
                 }, {
                     $set: {
@@ -199,7 +209,7 @@ class Model {
 
     /**
      * Get the next upcoming event that matches the params
-     * @param type JIBO_EVENT_TYPE
+     * @param type EVENT_TYPE
      * @param params Params to match against
      * @param cb Callback
      */
@@ -210,7 +220,7 @@ class Model {
         if (type) {
             params.type = type;
         }
-        self._getFromCollectionSorted('events', params, {
+        self._getFromCollectionSorted(util.COLLECTION_TYPE.EVENTS, params, {
             time: 1
         }, function (err, docs) {
                 cb(err, docs ? docs[0] : null);
@@ -218,97 +228,37 @@ class Model {
     }
 
     /**
-     * Get events from the database that match params
+     * Get docs from the specified collection that matches params
+     * @param type COLLECTION_TYPE
      * @param params Params to match against
      * @param cb Callback
      */
-    getMatchingEvents (params, cb) {
+    getMatchingCollectionDocs (type, params, cb) {
         var self = this;
 
-        //  Process custom params and fetch
-        params = self._processCustomMatchingParams(params);
-        self._getFromCollection('events', params, cb);
-    }
-
-    /**
-     * Get inventory items that match params
-     * @param params Params to match against
-     * @param cb Callback
-     */
-    getMatchingInventory (params, cb) {
-        var self = this;
-
-        //  Process custom params and fetch
-        params = self._processCustomMatchingParams(params);
-        self._getFromCollection('inventory', params, cb);
-    }
-
-    /**
-     * Get patient info that matches params
-     * @param params Params to match against
-     * @param cb Callback
-     */
-    getMatchingPatientInfo (params, cb) {
-        var self = this;
-        self._getFromCollection('patient', params, cb);
-    }
-
-    /**
-     * Get info about a person or people in the patient's life
-     * @param Params to match against
-     * @param cb Callback
-     */
-    getMatchingPersonInfo (params, cb) {
-        var self = this;
-
-        //  Process custom params and fetch
-        params = self._processCustomMatchingParams(params);
-        self._getFromCollection('people', params, cb);
-    }
-
-    /**
-     * Get random Media based on params
-     * @param params Params to match against
-     * @param cb Callback
-     */
-    getMatchingMedia (params, cb) {
-        var self = this;
-
-        //  Process custom params and fetch
-        params = self._processCustomMatchingParams(params);
-        self._getFromCollection('media', params, cb);
-    }
-
-    /**
-     * Get a random entertainment object that matches the params
-     * @param params Params to match against
-     * @param cb Callback
-     */
-    getMatchingEntertainment (params, cb) {
-        var self = this;
-
-        //  Process custom params and fetch
-        params = self._processCustomMatchingParams(params);
-        self._getFromCollection('entertainment', params, function (err, docs) {
-            var random = Math.floor(Math.random() * docs.length);
-            cb(err, docs[random], docs.length);
-        });
-    }
-
-    /**
-     * Get voice line matching params
-     * @param params Params to match against
-     * @param cb Callback
-     */
-    getMatchingVoice (params, cb) {
-        var self = this;
-
-        self._getFromCollection('voice', params, cb);
+        if (!self._db[type]) {
+            //  Invalid collection
+            cb(errors.INVALID_COLLECTION);
+        } else {
+            //  Process custom params and fetch
+            params = self._processCustomMatchingParams(params);
+            self._getFromCollection(type, params, function (err, docs) {
+                switch (type) {
+                    case util.COLLECTION_TYPE.ENTERTAINMENT:
+                        var random = Math.floor(Math.random() * docs.length);
+                        cb(err, docs[random], docs.length);
+                        break;
+                    default:
+                        cb(err, docs);
+                        break;
+                }
+            });
+        }
     }
 
     /**
      * Updates the matching events of the specified collection
-     * @param type JIBO_COLLECTION_TYPE
+     * @param type COLLECTION_TYPE
      * @param params Params to match against
      * @param update Updates to perform
      * @param cb Callback
@@ -322,7 +272,7 @@ class Model {
 
         if (!self._db[type]) {
             //  Invalid collection
-            cb(Errors.INVALID_COLLECTION);
+            cb(errors.INVALID_COLLECTION);
         } else {
             self._updateInCollection(type, params, update, updateOptions, cb);
         }
@@ -330,7 +280,7 @@ class Model {
 
     /**
      * Removes matching events from the specified collection
-     * @param type JIBO_COLLECTION_TYPE
+     * @param type COLLECTION_TYPE
      * @param params Params to match against
      * @param cb Callback
      */
@@ -342,196 +292,143 @@ class Model {
 
         if (!self._db[type]) {
             //  Invalid collection
-            cb(Errors.INVALID_COLLECTION);
+            cb(errors.INVALID_COLLECTION);
         } else {
             self._removeFromCollection(type, params, removeOptions, cb);
         }
     }
 
     /**
-     * Adds a new event to database
-     * @param params Event JS object
+     * Adds a new doc to the specified collection
+     * @param type COLLECTION_TYPE
+     * @param subtype Doc subtype
+     * @param params Params of doc
      * @param cb Callback
      */
-    addNewEvent (params, cb) {
+    addNewCollectionDoc (type, subtype, params, cb) {
         var self = this;
 
-        //  Verify correct params
-        self._verifyCollectionParams('events', 'default', params, function (err, params) {
-            if (err) {
-                cb(err);
-            } else {
-                var events = [params];
+        var verifyCB = null;
+        switch (type) {
+            case util.COLLECTION_TYPE.EVENTS:
+                verifyCB = function (err, params) {
+                    if (err) {
+                        cb(err);
+                    } else {
+                        var events = [params];
 
-                //  Check for repeat info
-                if (params.repeatInfo) {
-                    var repeatInfo = _.cloneDeep(params.repeatInfo);
-                    delete params.repeatInfo;
+                        //  Check for repeat info
+                        if (params.repeatInfo) {
+                            var repeatInfo = _.cloneDeep(params.repeatInfo);
+                            delete params.repeatInfo;
 
-                    //  Add all events leading up to end time
-                    var currTime = moment(repeatInfo.startTime);
-                    while (currTime <= moment(repeatInfo.endTime)) {
-                        //  Update time value and add to array
-                        var newParams = _.cloneDeep(params);
-                        newParams.time = moment(currTime).toISOString();
-                        events.push(newParams);
+                            //  Add all events leading up to end time
+                            var currTime = moment(repeatInfo.startTime);
+                            while (currTime <= moment(repeatInfo.endTime)) {
+                                //  Update time value and add to array
+                                var newParams = _.cloneDeep(params);
+                                newParams.time = moment(currTime).toISOString();
+                                events.push(newParams);
 
-                        //  Add time interval to currTime
-                        currTime = moment(currTime).add(repeatInfo.interval.value, timeModifiers[repeatInfo.interval.modifier]);
+                                //  Add time interval to currTime
+                                currTime = moment(currTime).add(repeatInfo.interval.value, timeModifiers[repeatInfo.interval.modifier]);
+                            }
+                        }
+
+                        self._addToCollection(type, events, cb);
                     }
+                };
+                break;
+
+            case util.COLLECTION_TYPE.INVENTORY:
+                //  Type must be supply or record
+                if (subtype !== 'supply' && subtype !== 'record') {
+                    cb(errors.INVALID_INVENTORY);
+                    return;
                 }
 
-                self._addToCollection('events', events, cb);
-            }
-        });
-    }
+                verifyCB = function (err, params) {
+                    if (err) {
+                        cb(err);
+                    } else {
+                        //  All is good, add to collection
+                        self._addToCollection(type, params, cb);
+                    }
+                };
+                break;
 
-    /**
-     * Adds a new inventory item to database
-     * @param params Inventory item
-     * @param cb Callback
-     */
-    addNewInventory (params, cb) {
-        var self = this;
+            case util.COLLECTION_TYPE.REMINDER_QUEUE:
+                verifyCB = function (err, params) {
+                    if (err) {
+                        cb(err);
+                    } else {
+                        //  Also make sure the _id of event exists
+                        self._getFromCollection(params.type, {
+                            _id: params.event._id
+                        }, function (err, docs) {
+                            if (err || docs.length === 0) {
+                                cb(err || errors.BAD_DOC_ID);
+                                return;
+                            }
+                            //  All is good, add to collection
+                            self._addToCollection(type, params, cb);
+                        });
+                    }
+                };
+                break;
 
-        //  Type must be supply or record
-        if (!params || (params.type !== 'supply' && params.type !== 'record')) {
-            cb(Errors.INVALID_INVENTORY);
-            return;
+            case util.COLLECTION_TYPE.CREDS:
+                //  Type must be email-login or update-password
+                if (params.type !== 'email-login' && params.type !== 'update-password') {
+                    cb(errors.INVALID_CREDENTIALS);
+                    return;
+                }
+
+                verifyCB = function (err, params) {
+                    if (err) {
+                        cb(err);
+                    } else {
+                        //  Can only add update-password if doesn't exist
+                        if (params.type === 'update-password') {
+                            self._getFromCollection(util.COLLECTION_TYPE.CREDS, {
+                                type: 'update-password'
+                            }, function (err, docs) {
+                                if (err) {
+                                    cb(err);
+                                } else if (docs.length > 0) {
+                                    cb('Error: Can\'t add a second update-password doc');
+                                } else {
+                                    //  All is good, add to collection
+                                    self._addToCollection(type, params, cb);
+                                }
+                            });
+                        } else {
+                            //  Ok to add email-login
+                            self._addToCollection(type, params, cb);
+                        }
+                    }
+                };
+                break;
+
+            //  These don't need special processing
+            case util.COLLECTION_TYPE.PATIENT:
+            case util.COLLECTION_TYPE.PEOPLE:
+            case util.COLLECTION_TYPE.MEDIA:
+            case util.COLLECTION_TYPE.ENTERTAINMENT:
+            case util.COLLECTION_TYPE.VOICE:
+            case util.COLLECTION_TYPE.EMAIL:
+                verifyCB = function (err, params) {
+                    if (err) {
+                        cb(err);
+                    } else {
+                        //  All is good, add to collection
+                        self._addToCollection(type, params, cb);
+                    }
+                };
+                break;
         }
 
-        //  Verify correct params
-        self._verifyCollectionParams('inventory', params.type, params, function (err, params) {
-            if (err) {
-                cb(err);
-            } else {
-                //  All is good, add to collection
-                self._addToCollection('inventory', params, cb);
-            }
-        });
-    }
-
-    /**
-     * Queue reminder
-     * @param params Params of reminder
-     * @param cb Callback
-     */
-    addNewReminder (params, cb) {
-        var self = this;
-
-        //  Verify correct params
-        self._verifyCollectionParams('reminderQueue', 'default', params, function (err) {
-            if (err) {
-                cb(err);
-            } else {
-                //  Also make sure the _id of event exists
-                self._getFromCollection(params.type, {
-                    _id: params.event._id
-                }, function (err, docs) {
-                    if (err || docs.length === 0) {
-                        cb(err || Errors.BAD_DOC_ID);
-                        return;
-                    }
-                    //  All is good, add to collection
-                    self._addToCollection('reminderQueue', params, cb);
-                });
-            }
-        });
-    }
-
-    /**
-     * Add more info about the patient
-     * @param params Params about the new info
-     * @param cb Callback
-     */
-    addNewPatientInfo (params, cb) {
-        var self = this;
-
-        //  Verify correct params
-        self._verifyCollectionParams('patient', 'default', params, function (err) {
-            if (err) {
-                cb(err);
-            } else {
-                //  All is good, add to collection
-                self._addToCollection('patient', params, cb);
-            }
-        });
-    }
-
-    /**
-     * Add info about a person in the patient's life
-     * @param params Params of the person
-     * @param cb Callback
-     */
-    addNewPerson (params, cb) {
-        var self = this;
-
-        //  Verify correct params
-        self._verifyCollectionParams('people', 'default', params, function (err) {
-            if (err) {
-                cb(err);
-            } else {
-                //  All is good, add to collection
-                self._addToCollection('people', params, cb);
-            }
-        });
-    }
-
-    /**
-     * Add new media relevant to the patient
-     * @param params Params of media
-     * @param cb Callback
-     */
-    addNewMedia (params, cb) {
-        var self = this;
-
-        //  Verify correct params
-        self._verifyCollectionParams('media', 'default', params, function (err) {
-            if (err) {
-                cb(err);
-            } else {
-                //  All is good, add to collection
-                self._addToCollection('media', params, cb);
-            }
-        });
-    }
-
-    /**
-     * Add entertainment to randomly show to patient
-     * @param params Params of entertainment
-     * @param cb Callback
-     */
-    addNewEntertainment (params, cb) {
-        var self = this;
-
-        //  Verify correct params
-        self._verifyCollectionParams('entertainment', 'default', params, function (err) {
-            if (err) {
-                cb(err);
-            } else {
-                //  All is good, add to collection
-                self._addToCollection('entertainment', params, cb);
-            }
-        });
-    }
-
-    /**
-     * Add a new voice line for interacting with patient
-     * @param params Params of voice line
-     * @param cb Callback
-     */
-    addNewVoiceLine (params, cb) {
-        var self = this;
-
-        //  Verify correct params
-        self._verifyCollectionParams('voice', 'default', params, function (err) {
-            if (err) {
-                cb(err);
-            } else {
-                //  All is good, add to collection
-                self._addToCollection('voice', params, cb);
-            }
-        });
+        self._verifyCollectionParams(type, subtype, params, verifyCB);
     }
 
     /*  PRIVATE METHODS ******************************************************************************************/
@@ -548,10 +445,10 @@ class Model {
 
         //  Verify collection/docType
         if (!minCollectionKeys[collection]) {
-            cb(Errors.INVALID_COLLECTION);
+            cb(errors.INVALID_COLLECTION);
             return;
         } else if (!minCollectionKeys[collection][docType]) {
-            cb(Errors.INVALID_DOCTYPE);
+            cb(errors.INVALID_DOCTYPE);
             return;
         }
         var keys = minCollectionKeys[collection][docType];
@@ -564,9 +461,9 @@ class Model {
         //  Validate any date params
         params = self._dateCheckAndConvert(params);
         if (!params) {
-            cb(Errors.INVALID_DATE);
+            cb(errors.INVALID_DATE);
         } else if (!(paramsCheck && repeatCheck && remindCheck)) {
-            cb(Errors.KEY_MISSING);
+            cb(errors.KEY_MISSING);
         } else {
             cb(null, params);   //  Success
         }
@@ -744,7 +641,13 @@ class Model {
      */
     _addToCollection (collection, docs, cb) {
         var self = this;
-        self._db[collection].insert(docs, cb);
+        self._db[collection].insert(docs, function (err, docs) {
+            if (!docs.length) {
+                //  Convert to array
+                docs = [docs];
+            }
+            cb(err, docs);
+        });
     }
 
     /**
