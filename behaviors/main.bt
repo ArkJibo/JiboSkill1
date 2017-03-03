@@ -5,61 +5,115 @@
         "name": "",
         "asset-pack": "core",
         "children": [
-            4,
-            6,
-            "e74c40e1-f941-4859-8db6-611cfa77d339"
+            "29c07075-d765-4f2b-af75-3c9532a2e306",
+            "8ee52483-66b8-41a1-b1e2-8afb90a53aab",
+            "6cf1f411-f86d-48d2-b898-72a997ac5326"
         ],
-        "decorators": [],
+        "decorators": [
+            "c5468334-737e-4b4b-aa09-5fc1c6b7f477"
+        ],
         "options": {}
-    },
-    "4": {
-        "id": 4,
-        "class": "PlayAnimation",
-        "name": "Play a greeting",
-        "asset-pack": "core",
-        "parent": 1,
-        "options": {
-            "animPath": "greeting.keys",
-            "config": [
-                "(animation) => {",
-                "}"
-            ]
-        }
-    },
-    "6": {
-        "id": 6,
-        "class": "PlayAudio",
-        "name": "Bawhoop",
-        "asset-pack": "core",
-        "parent": 1,
-        "options": {
-            "audioPath": "FX_Bawhoop.mp3"
-        }
     },
     "meta": {
         "version": 1
     },
-    "e74c40e1-f941-4859-8db6-611cfa77d339": {
-        "id": "e74c40e1-f941-4859-8db6-611cfa77d339",
-        "class": "ExecuteScript",
+    "29c07075-d765-4f2b-af75-3c9532a2e306": {
+        "id": "29c07075-d765-4f2b-af75-3c9532a2e306",
+        "class": "Subtree",
         "name": "",
         "options": {
-            "exec": [
+            "behaviorPath": "idle.bt",
+            "getNotepad": [
                 "() => {",
-                "    var apiKey = 'dD0SwsmXOxU24hPNPwIuWH'; //change [API_KEY] to your key found at https://ifttt.com/maker",
-                "    var IFTTTMaker = require('iftttmaker')(apiKey);",
-                "    var action = 'jibo_send_email'; //change [EVENT_NAME] to your Maker Event (e.g. jibo_send_mail)",
+                "    return {};",
+                "}"
+            ],
+            "onResult": [
+                "(treeResult) => {",
+                "}"
+            ]
+        },
+        "asset-pack": "core",
+        "parent": 1,
+        "decorators": [
+            "fa6e0483-9d2a-46c5-a5fc-86d61bc52377"
+        ]
+    },
+    "fa6e0483-9d2a-46c5-a5fc-86d61bc52377": {
+        "id": "fa6e0483-9d2a-46c5-a5fc-86d61bc52377",
+        "class": "SucceedOnEmbedded",
+        "name": "",
+        "options": {
+            "rule": "hey_jibo",
+            "onResult": [
+                "(listener) => {",
+                "\tlistener.on('hey-jibo', function(asrResult, speakerIds) {",
                 "",
-                "    // Promise",
-                "    IFTTTMaker.send(action, 'hi', 'Im jibo here').then(function () {",
-                "        console.log('Request was sent');",
-                "    }).catch(function (error) {",
-                "        console.log('The request could not be sent:', error);",
+                "\t});",
+                "}"
+            ]
+        },
+        "asset-pack": "core"
+    },
+    "8ee52483-66b8-41a1-b1e2-8afb90a53aab": {
+        "id": "8ee52483-66b8-41a1-b1e2-8afb90a53aab",
+        "class": "TextToSpeech",
+        "name": "",
+        "options": {
+            "words": "Hello",
+            "onWord": [
+                "(word) => {",
+                "}"
+            ]
+        },
+        "asset-pack": "core",
+        "parent": 1,
+        "decorators": []
+    },
+    "6cf1f411-f86d-48d2-b898-72a997ac5326": {
+        "id": "6cf1f411-f86d-48d2-b898-72a997ac5326",
+        "class": "Listen",
+        "name": "",
+        "options": {
+            "getOptions": [
+                "() => {",
+                "    let options = {",
+                "        heyJibo: false,",
+                "        detectEnd: false,",
+                "        incremental: false,",
+                "        authenticateSpeaker: ''",
+                "    }",
+                "    return options;",
+                "}"
+            ],
+            "rule": "main.rule",
+            "onResult": [
+                "(listener) => {",
+                "    listener.on('cloud', function(asrResult, speakerIds) {",
+                "        var mainListener = require('../listeners/main');",
+                "        mainListener(asrResult, speakerIds);",
                 "    });",
                 "}"
             ]
         },
         "asset-pack": "core",
         "parent": 1
+    },
+    "c5468334-737e-4b4b-aa09-5fc1c6b7f477": {
+        "id": "c5468334-737e-4b4b-aa09-5fc1c6b7f477",
+        "class": "WhileCondition",
+        "name": "",
+        "options": {
+            "init": [
+                "() => {",
+                "}"
+            ],
+            "conditional": [
+                "() => {",
+                "    return true;",
+                "}"
+            ]
+        },
+        "asset-pack": "core"
     }
 }

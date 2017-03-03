@@ -16,11 +16,8 @@ jibo.init('face', function(err) {
     }
 
     // Load and create the behavior tree
-    let root = jibo.bt.create('../behaviors/groove');
+    let root = jibo.bt.create('../behaviors/main');
     root.start();
-
-    jibo.eventBus = new EventBus();
-    jibo.controller = new Controller(jibo.eventBus);
 
     // Listen for the jibo main update loop
     jibo.timer.on('update', function(elapsed) {
