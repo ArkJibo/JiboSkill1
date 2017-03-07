@@ -92,7 +92,7 @@ class EmailClient {
         self._eventBus = eventBus;
 
         //added an event listener for sending email
-        self._eventBus.addEventListener(eventObj['SEND_EMAIL'], function(res){
+        self._eventBus.addEventListener(eventObj['SEND_EMAIL'], this , function(res){
             self._sendEmail(res.fromName, res.fromEmail, res.subject, res.body, res.attachments);
         });
        
@@ -241,7 +241,7 @@ class EmailClient {
                             //  Fetch the entire email bodies
                             var f = self._imap.fetch(results, {
                                 bodies: [''],
-                                markSeen: false //don't mark as seen until the user actually sees it 
+                                markSeen: true //don't mark as seen until the user actually sees it 
                             });
 
                             f.on('message', function (msg, seqno) {
