@@ -1,12 +1,11 @@
 # Jibo Caregiver
 
-Jibo skill for aiding those with Alzheimer's in their day to day lives 
+Jibo skill for aiding those with Alzheimer's in their day to day lives
 
-## Prerequisities
+## Prerequisites
 
 [Jibo SDK](https://developers.jibo.com/docs/)  
 [NodeJS](https://docs.npmjs.com/getting-started/installing-node)  
-IFTTT account
 
 ## Installation
 
