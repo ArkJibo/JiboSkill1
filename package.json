@@ -13,6 +13,7 @@
   "dependencies": {
     "async": "^2.1.2",
     "behaviorify": "^1.0.0",
+    "config": "^1.25.1",
     "imap": "^0.8.19",
     "jibo": "^3.0.7",
     "jsonfile": "^2.4.0",
@@ -29,6 +30,7 @@
     "chai": "^3.5.0",
     "grunt": "^1.0.1",
     "grunt-contrib-jshint": "^1.1.0",
+    "grunt-env": "^0.4.4",
     "grunt-mocha-test": "^0.13.2",
     "grunt-shell": "^2.1.0",
     "mocha": "^3.2.0",

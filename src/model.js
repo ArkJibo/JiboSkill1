@@ -64,21 +64,25 @@ var removeOptions = {
 
 class Model {
 
-    constructor () {
+    /**
+     * Constructor
+     * @param db Object containing db file names
+     */
+    constructor (db) {
         var self = this;
 
         //  Initialize collections
         self._db = {};
-        self._db[util.COLLECTION_TYPE.EVENTS] = new Datastore('./db/events.db');
-        self._db[util.COLLECTION_TYPE.REMINDER_QUEUE] = new Datastore('./db/reminderQueue.db');
-        self._db[util.COLLECTION_TYPE.INVENTORY] = new Datastore('./db/inventory.db');
-        self._db[util.COLLECTION_TYPE.PATIENT] = new Datastore('./db/patient.db');
-        self._db[util.COLLECTION_TYPE.PEOPLE] = new Datastore('./db/people.db');
-        self._db[util.COLLECTION_TYPE.MEDIA] = new Datastore('./db/media.db');
-        self._db[util.COLLECTION_TYPE.ENTERTAINMENT] = new Datastore('./db/entertainment.db');
-        self._db[util.COLLECTION_TYPE.VOICE] = new Datastore('./db/voice.db');
-        self._db[util.COLLECTION_TYPE.CREDS] = new Datastore('./db/credentials.db');
-        self._db[util.COLLECTION_TYPE.EMAIL] = new Datastore('./db/emails.db');
+        self._db[util.COLLECTION_TYPE.EVENTS] = new Datastore(db.events);
+        self._db[util.COLLECTION_TYPE.REMINDER_QUEUE] = new Datastore(db.reminderQueue);
+        self._db[util.COLLECTION_TYPE.INVENTORY] = new Datastore(db.inventory);
+        self._db[util.COLLECTION_TYPE.PATIENT] = new Datastore(db.patient);
+        self._db[util.COLLECTION_TYPE.PEOPLE] = new Datastore(db.people);
+        self._db[util.COLLECTION_TYPE.MEDIA] = new Datastore(db.media);
+        self._db[util.COLLECTION_TYPE.ENTERTAINMENT] = new Datastore(db.entertainment);
+        self._db[util.COLLECTION_TYPE.VOICE] = new Datastore(db.voice);
+        self._db[util.COLLECTION_TYPE.CREDS] = new Datastore(db.credentials);
+        self._db[util.COLLECTION_TYPE.EMAIL] = new Datastore(db.emails);
 
         Object.keys(self._db).forEach(function(col) {
             self._db[col].loadDatabase();

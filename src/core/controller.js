@@ -7,6 +7,7 @@ var events = require('./event/event');
 var errors = require('../errors');
 var util = require('../util');
 var _ = require('lodash');
+var config = require('config');
 var async = require('async');
 
 class Controller {
@@ -17,8 +18,19 @@ class Controller {
     constructor (eventBus) {
         var self = this;
 
+        //  Check NODE_ENV for build type
+        var db = {};
+        switch (process.env.NODE_ENV) {
+            case 'production':
+                db = config.get('model.db.prod');
+                break;
+            case 'development':
+                db = config.get('model.db.dev');
+                break;
+        }
+
         self._eventBus = eventBus;
-        self._model = new Model();
+        self._model = new Model(db);
         self._emailClient = new EmailClient();
         self._bookkeeper = new BookKeeper();
 

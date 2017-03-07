@@ -9,7 +9,10 @@ var EventBus = require('../../src/core/event/event-bus');
 var errors = require('../../src/errors');
 
 describe('EventBus', function () {
-    var eventBus = new EventBus();
+    var eventBus;
+    before(function () {
+        eventBus = new EventBus();
+    });
 
     beforeEach(function (done) {
         eventBus.removeAllListeners();

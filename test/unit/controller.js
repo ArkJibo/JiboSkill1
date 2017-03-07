@@ -20,64 +20,18 @@ var expect = require('chai').expect;
 var moment = require('moment');
 
 describe('Controller', function () {
-    var eventBus = new EventBus();
-    var controller = new Controller(eventBus);
+    var eventBus;
+    var controller;
     var presentTime = moment().format();
-
-    var tempFiles = {
-        'events': './db/test-events.db',
-        'reminderQueue': './db/test-reminderQueue.db',
-        'inventory': './db/test-inventory.db',
-        'patient': './db/test-patient.db',
-        'people': './db/test-people.db',
-        'media': './db/test-media.db',
-        'entertainment': './db/test-entertainment.db',
-        'voice': './db/test-voice.db',
-        'credentials': './db/test-credentials.db'
-    };
-
-    var cleanup = function (cb) {
-        //  Delete the temp db files
-        var funcs = [];
-        Object.keys(tempFiles).forEach(function (key) {
-            funcs.push(function(cb) {
-                fs.unlink(tempFiles[key], function (err) {
-                    expect(err).to.not.exist;
-                    cb();
-                });
-            });
-        });
-        async.parallel(funcs, cb);
-    };
-
-    //  For cleaning up on ctrl+c
-    var rl = require('readline').createInterface({
-        input: process.stdin,
-        output: process.stdout
-    });
-    rl.on('SIGINT', function () {
-        cleanup(function () {
-            process.exit();
-        });
-    });
-
-    before(function (done) {
-        //  Use temporary db files for testing
-        var functions = [];
-        Object.keys(tempFiles).forEach(key => {
-            controller._model._db[key] = new Datastore(tempFiles[key]);
-            functions.push(function (cb) {
-                controller._model._db[key].loadDatabase();
-                cb();
-            });
-        });
-        async.parallel(functions, done);
+    before(function () {
+        eventBus = new EventBus();
+        controller = new Controller(eventBus);
     });
 
     afterEach(function (done) {
         //  Clear contents of each temp db file
         var functions = [];
-        Object.keys(tempFiles).forEach(function (key) {
+        Object.keys(controller._model._db).forEach(function (key) {
             functions.push(function (cb) {
                 controller._model._db[key].remove({}, { multi: true }, cb);
             });
