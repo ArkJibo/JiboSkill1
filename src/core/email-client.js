@@ -199,7 +199,7 @@ class EmailClient {
             subject: subject, // Subject line
             text: text, // plaintext body
             attachments: files //attachments
-        }
+        };
 
         // send mail with defined transport object
         self._loadTransporter().done(function (transporter){
