@@ -1,172 +1,148 @@
 'use strict';
 
-var Datastore = require('nedb');
-var moment = require('moment');
 var Util = require('./util');
-var Errors = require('./errors');
-var async = require('async');
 
-var minKeys = {
-    'commandReport': {
-        'default': ['command', 'subtype', 'totalUsage', 'individualData']
-    },
-    'dailyReport': {
-        'default': []
-    }
+var moment = require('moment');
+
+var metricsEventEmitter = require('../src/core/event/event-bus.js').EventEmitter;
+
+
+var init = function(EventI) {
+
+    EventI.on('UNKNOWN_USER_INPUT', function(data, cb) {
+
+        EventI.emit('DATABASE_ADD', {
+            type: 'errorReport',
+            doc: data
+        }, function(err, docs) {
+            if (err) {
+                cb(err);
+            } else {
+                cb(docs);
+            }
+        });
+        var err;
+        cb(err, data);
+    });
+
+    EventI.on('COMMAND_REPORT_ADD', function(com, params, cb) {
+
+        var paramIndividualData = {
+            date: moment().toISOString(),
+            input: params
+        }
+
+
+        EventI.emit('DATABASE_FETCH', {
+            type: 'commandReport',
+            fetchParams: {
+                'command': com
+            }
+        }, function(err, docs) {
+            if (err) {
+                cb(err);
+            }
+            if (Object.keys(docs).length == 0) {
+
+                EventI.emit('DATABASE_ADD', {
+                    type: 'commandReport',
+                    doc: {
+                        command: com,
+                        totalUsage: 1,
+                        individualData: [paramIndividualData]
+                    }
+                }, function(err, docs) {
+                    if (err) {
+                        cb(err);
+                    } else {
+                        cb(docs);
+                    }
+                });
+            } else {
+                EventI.emit('DATABASE_UPDATE', 'commandReport', {
+                    'command': com
+                }, {
+                    $push: {
+                        'individualData': paramIndividualData
+                    }
+                }, function(err, docs) {
+                    if (err) {
+                        cb(err);
+                    } else {
+                        cb(docs);
+                    }
+                });
+            }
+            cb(err, paramIndividualData);
+        });
+
+        cb( null, paramIndividualData);
+
+    });
+
+    EventI.on('DAILY_REPORT_ADD', function(param, cb) {
+
+        var param = {
+            command: param,
+            date: moment().startOf('d').toISOString(),
+            time: moment().toISOString()
+        }
+
+    EventI.emit('DATABASE_FETCH', {
+        type: 'dailyReport',
+        fetchParams: {
+            'date': param.date
+        }
+    }, function(err, docs) {
+        if (err) {
+            cb(err);
+        }
+        if (Object.keys(docs).length == 0) {
+
+            EventI.emit('DATABASE_ADD', {
+                type: 'dailyReport',
+                doc: {
+                    firstInteraction:  param.time,
+                    totalUsage: 1,
+                    individualData: [{
+                          command: param.command,
+                          time: param.time
+                    }]
+                }
+            }, function(err, docs) {
+                if (err) {
+                    cb(err);
+                } else {
+                    cb(docs);
+                }
+            });
+        } else {
+            EventI.emit('DATABASE_UPDATE', 'dailyReport', {
+                'command': param.command
+            }, {
+                $push: {
+                    'interactions': {
+                          command: param.command,
+                          time: param.time
+                    }
+                }
+            }, function(err, docs) {
+                if (err) {
+                    cb(err);
+                } else {
+                    cb(docs);
+                }
+            });
+        }
+        cb(err, param);
+    });
+
+    cb( null, param);
+
+});
+
+
 };
 
-class Metrics {
-    constructor () {
-        var self = this;
-        //  Initialize collections
-        self._db = {};
-        self._db.commandReport = new Datastore('./db/commandReport.db');
-        self._db.dailyReport = new Datastore('./db/dailyReport.db');
 
-
-        Object.keys(self._db).forEach(collection => {
-            self._db[collection].loadDatabase();
-        });
-    }
-
-
-    /*  ToDo- Public Methods  ******************************************************************************************/
-
-
-
-
-    /**
-     * Add a command report to the collection
-     *If the command report exists, push the new individual data into the array
-     * @param params Params of command report
-     * @param cb Callback
-     */
-    addToCommandReport (params, cb) {
-        var self = this;
-
-        self._getFromCollection ('commandReport', {command: params.command}, function (err, docs) {
-                if(Object.keys(docs).length == 0){
-                  self._addToCollection('commandReport', params, cb);
-                }
-                else{
-                  self._updateInCollection('commandReport', {'command': params.command}, {$push: {'individualData':params.individualData}}, cb);
-                }
-        });
-    }
-    /**
-     * Add a daily report to the collection
-     *If the report for that day exists, push the new data into the array
-     * @param params Params of command report
-     * @param cb Callback
-     */
-    addToDailyReport (params, cb) {
-        var self = this;
-
-        self._getFromCollection ('dailyReport', {date: params.date}, function (err, docs) {
-                if(Object.keys(docs).length == 0){
-                  params['firstInteraction'] = params.time;
-                  params['interactions'] = [{
-                    command : params.command,
-                    time : params.time
-                  }];
-                  delete params.time;
-                  delete params.command;
-                  self._addToCollection('dailyReport', params, cb);
-                }
-                else{
-                  self._updateInCollection('dailyReport', {'date': params.date}, { $push: {'interactions': {command: params.command, time: params.time}}}, cb);
-                }
-        });
-    }
-
-    /**
-     * Add a walk by to the daily report to the collection
-     *If the report for that day has not been created yet, do so
-     * @param params Params of command report
-     * @param cb Callback
-     */
-    addWalkToDailyReport (params, cb) {
-        var self = this;
-        self._getFromCollection ('dailyReport', {date: params.date}, function (err, docs) {
-                if(Object.keys(docs).length == 0){
-                  params.walkBys = 1;
-                  self._addToCollection('dailyReport', params, cb);
-                }
-                else{
-                  self._updateInCollection('dailyReport', {date: params.date}, {  $set: { walkBys : 1+docs[0].walkBys }}, cb);
-                }
-        });
-    }
-
-
-    /**
-     * Get command Report
-     * @param params Params of commandReport
-     * @param cb Callback
-     */
-    getcommandReport (params, cb) {
-        var self = this;
-
-        self._getFromCollection('commandReport', params, cb);
-    }
-
-    /**
-     * Get daily Report
-     * @param params Params of dailyReport
-     * @param cb Callback
-     */
-    getDailyReport (params, cb) {
-        var self = this;
-        self._getFromCollection('dailyReport', params, cb);
-    }
-
-
-        /*  PRIVATE METHODS ******************************************************************************************/
-
-
-        /**
-         * Adder for Collection
-         * @param collection Collection name
-         * @param docs Object or array of Objects to add
-         * @param cb Callback to pass result to
-         */
-        _addToCollection (collection, docs, cb) {
-            var self = this;
-            self._db[collection].insert(docs, cb);
-        }
-
-
-        /**
-         * Getter for Collection
-         * @param collection Collection name
-         * @param params Params to match against
-         * @param cb Callback to pass result to
-         */
-        _getFromCollection (collection, params, cb) {
-            var self = this;
-            self._db[collection].find(params, cb);
-        }
-        /**
-         * Updater for Collection
-         * @param collection Collection name
-         * @param params Params to match against
-         * @param updates The updates
-         * @param cb Callback to pass result to
-         */
-        _updateInCollection (collection, params, updates, cb) {
-            var self = this;
-            // Can provide entire doc to replace or pass operations
-            self._db[collection].update(
-                params,
-                updates, {
-                    multi: true,
-                    returnUpdatedDocs: true,
-                },
-                cb
-            );
-        }
-
-
-}
-
-module.exports = Metrics;
+module.exports.init = init;
