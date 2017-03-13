@@ -33,12 +33,6 @@ module.exports = function (grunt) {
                     timeout: 10000
                 },
                 src: ['test/unit/*.js']
-            },
-            email: {
-                options: {
-                    timeout: 10000
-                },
-                src: ['test/unit/emailClientTest.js']
             }
         }
     });
