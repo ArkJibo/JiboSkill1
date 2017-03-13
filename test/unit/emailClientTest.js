@@ -24,6 +24,8 @@ describe("Email Client test:", function() {
     //Instantiate email Client class 
     event_Bus = new eventBus();
     email_Client = new emailClient("Roy Kim", event_Bus);
+
+    
   });
 
   describe("Checking email functionality:", function() {
@@ -44,7 +46,7 @@ describe("Email Client test:", function() {
       //send email to ourself 
       var listenCheck = false;
       //start listen event bus
-      event_Bus.addEventListener("received-email", function(res){
+      event_Bus.addEventListener(eventObj["RECEIVED_EMAIL"], email_Client , function(res){
         //check the content
         console.log("Alert: Listen Received Email!");
         expect(res.fromEmail).to.equal("kimr07175@gmail.com");
