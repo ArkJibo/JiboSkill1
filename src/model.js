@@ -105,13 +105,15 @@ class Model {
                 docs.forEach(function (doc) {
                     //  Fill all reminders needed for this event
                     for (var i = 0; i < doc.reminderInfo.numReminders; i++) {
-                        var startMoment = moment(doc.reminderInfo.startTime);
                         var interval = i * doc.reminderInfo.interval.value;
                         reminders.push({
                             type: doc.type,
                             eventID: doc._id,
                             viewed: false,
-                            time: startMoment.add(interval, timeModifiers[doc.reminderInfo.interval.modifier]).toISOString()
+                            time: moment(parseInt(doc.reminderInfo.startTime)).add(
+                                interval,
+                                timeModifiers[doc.reminderInfo.interval.modifier]
+                            ).format('x')
                         });
                     }
                 });
@@ -129,8 +131,8 @@ class Model {
     getTodaySchedule (cb) {
         var self = this;
 
-        var start = moment().startOf('day').toISOString();
-        var end = moment().endOf('day').toISOString();
+        var start = moment().startOf('day').format('x');
+        var end = moment().endOf('day').format('x');
         var params = self._processCustomMatchingParams({
             _custom: [{
                 key: 'time',
@@ -159,7 +161,7 @@ class Model {
         //  First remove any expired reminders
         self._removeFromCollection(util.COLLECTION_TYPE.REMINDER_QUEUE, {
             time: {
-                $lte: moment().toISOString()
+                $lte: moment().format('x')
             },
             viewed: true    //  Only remove ones that have been viewed
         }, removeOptions, function (err, numRemoved) {
@@ -323,15 +325,15 @@ class Model {
                             delete params.repeatInfo;
 
                             //  Add all events leading up to end time
-                            var currTime = moment(repeatInfo.startTime);
-                            while (currTime <= moment(repeatInfo.endTime)) {
+                            var currTime = moment(parseInt(repeatInfo.startTime, 10));
+                            while (currTime.format('x') <= moment(parseInt(repeatInfo.endTime, 10)).format('x')) {
                                 //  Update time value and add to array
                                 var newParams = _.cloneDeep(params);
-                                newParams.time = moment(currTime).toISOString();
+                                newParams.time = currTime.format('x');
                                 events.push(newParams);
 
                                 //  Add time interval to currTime
-                                currTime = moment(currTime).add(repeatInfo.interval.value, timeModifiers[repeatInfo.interval.modifier]);
+                                currTime.add(repeatInfo.interval.value, timeModifiers[repeatInfo.interval.modifier]);
                             }
                         }
 
@@ -459,7 +461,7 @@ class Model {
         var remindCheck = !keys.reminderInfo || self._checkForKeys(params.reminderInfo, minReminderInfoKeys);
 
         //  Validate any date params
-        params = self._dateCheckAndConvert(params);
+        params = self._dateCheck(params);
         if (!params) {
             cb(errors.INVALID_DATE);
         } else if (!(paramsCheck && repeatCheck && remindCheck)) {
@@ -470,27 +472,25 @@ class Model {
     }
 
     /**
-     * Check params for any date keys, validate, and convert to ISO string
+     * Check params for any date keys and validate
      * @param params Params containing date keys
      * @return modified params or null if invalid dates present
      */
-    _dateCheckAndConvert (params) {
+    _dateCheck (params) {
         var self = this;
 
         //  Loop over each key
         var ret = Object.keys(params).every(function (key) {
             if (typeof params[key] === 'object') {
                 //  Recurse
-                self._dateCheckAndConvert(params[key]);
+                self._dateCheck(params[key]);
             } else {
                 //  Check if key is a date key
                 var i = _.indexOf(dateKeys, key);
                 if (i >= 0) {
                     //  Is date, make sure it's valid
-                    if (moment(params[key]).isValid()) {
-                        //  Convert to ISO string
-                        params[key] = moment(params[key]).toISOString();
-                    } else {
+                    var toMs = parseInt(params[key], 10);
+                    if (!toMs || !moment(toMs).isValid()) {
                         //  Invalid, abort everything
                         return false;
                     }
