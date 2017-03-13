@@ -98,7 +98,7 @@ class EmailClient {
        
         getFreshImap(function (err, imap, email, smtpConfig) {
             if (err) {
-                console.log(err);
+                //console.log(err);
             } else {
                 self._imap.resolve(imap);
                 self._email = email;
@@ -152,14 +152,14 @@ class EmailClient {
 
         jsonfile.writeFile("./email.json", obj, function (err) {
             if (err){
-                console.log(err);
+                //console.log(err);
                 return;
             }
-            console.log("email.json was updated!");
+            //console.log("email.json was updated!");
 
             getFreshImap(function (err, imap, email, smtpConfig) {
                 if (err) {
-                    console.log(err);
+                    //console.log(err);
                 } else {
                     self._imap.resolve(imap);
                     self._email = email;
@@ -207,11 +207,11 @@ class EmailClient {
             // send mail with defined transport object
             self._transporter.sendMail(mailOptions, function(error, info){
                 if(error){
-                    console.log(error);
+                    //console.log(error);
                     return;
                 }
                 self._SendCheck.resolve(true);
-                console.log('Message sent: ' + info.response);
+                //console.log('Message sent: ' + info.response);
                 
             });
         });   
@@ -232,7 +232,7 @@ class EmailClient {
                     var collectUnseenEmails = function () {
                         self._imap.search(['UNSEEN'], function (err, results) {
                             if (err || results.length === 0) {
-                                console.log(err || 'NO NEW MAIL');
+                                //console.log(err || 'NO NEW MAIL');
                                 self._status.resolve("No new mail");
                                 self._status = Q.defer();
                                 return;
@@ -248,13 +248,13 @@ class EmailClient {
                                 var parser = new MailParser();
                                 parser.on('end', function (mail) {
                                     //  Done parsing
-                                    console.log('NEW MAIL!');
-                                    console.log(
-                                        'From: ' + mail.from[0].address + '\n' +
-                                        'Name: ' + mail.from[0].name + '\n' + 
-                                        'Subject: ' + mail.subject + '\n' +
-                                        'Body:' + mail.text
-                                    );
+                                    //console.log('NEW MAIL!');
+                                    // console.log(
+                                    //     'From: ' + mail.from[0].address + '\n' +
+                                    //     'Name: ' + mail.from[0].name + '\n' + 
+                                    //     'Subject: ' + mail.subject + '\n' +
+                                    //     'Body:' + mail.text
+                                    // );
                                     
                                     var nameField = (mail.from[0].name).split(" ");
 
@@ -296,14 +296,14 @@ class EmailClient {
             });
 
             self._imap.on('error', function (err) {
-                console.log(err);
-                console.log('Trying again in 10 seconds...');
+                //console.log(err);
+                //console.log('Trying again in 10 seconds...');
                 self._imap.end();
 
                 //  Get a new Imap to work with
                 getFreshImap(function (err, imap) {
                     if (err) {
-                        console.log(err);
+                        //console.log(err);
                     } else {
                         self._imap = imap;
 
