@@ -11,71 +11,20 @@ var moment = require('moment');
 var Model = require('../../src/model');
 var errors = require('../../src/errors');
 var expect = require('chai').expect;
+var config = require('config');
 var util = require('../../src/util');
 var _ = require('lodash');
 
 describe('Model', function () {
-    var model = new Model();
-    var tempFiles = {};
-    tempFiles[util.COLLECTION_TYPE.EVENTS] = './db/test-events.db';
-    tempFiles[util.COLLECTION_TYPE.REMINDER_QUEUE] = './db/test-reminderQueue.db';
-    tempFiles[util.COLLECTION_TYPE.INVENTORY] = './db/test-inventory.db';
-    tempFiles[util.COLLECTION_TYPE.PATIENT] = './db/test-patient.db';
-    tempFiles[util.COLLECTION_TYPE.PEOPLE] = './db/test-people.db';
-    tempFiles[util.COLLECTION_TYPE.MEDIA] = './db/test-media.db';
-    tempFiles[util.COLLECTION_TYPE.ENTERTAINMENT] = './db/test-entertainment.db';
-    tempFiles[util.COLLECTION_TYPE.VOICE] = './db/test-voice.db';
-    tempFiles[util.COLLECTION_TYPE.CREDS] = './db/test-credentials.db';
-    tempFiles[util.COLLECTION_TYPE.EMAIL] = './db/test-emails.db';
-
-    var cleanup = function (cb) {
-        //  Delete the temp db files
-        var funcs = [];
-        Object.keys(tempFiles).forEach(function (key) {
-            funcs.push(function(cb) {
-                fs.unlink(tempFiles[key], function (err) {
-                    expect(err).to.not.exist;
-                    cb();
-                });
-            });
-        });
-        async.parallel(funcs, cb);
-    };
-
-    //  For cleaning up on ctrl+c
-    var rl = require('readline').createInterface({
-        input: process.stdin,
-        output: process.stdout
-    });
-    rl.on('SIGINT', function () {
-        cleanup(function () {
-            process.exit();
-        });
-    });
-
-    before(function (done) {
-        //  Use temporary db files for testing
-        var functions = [];
-        Object.keys(tempFiles).forEach(key => {
-            model._db[key] = new Datastore(tempFiles[key]);
-            functions.push(function (cb) {
-                model._db[key].loadDatabase();
-                cb();
-            });
-        });
-        async.parallel(functions, done);
-    });
-
-    after(function () {
-        cleanup(function () {
-            console.log('\n***NOTE: YOU CAN IGNORE THE DEPRECATION WARNING ABOUT ISO FORMAT');
-        });
+    var model;
+    before(function () {
+        model = new Model(config.get('model.db'));
     });
 
     afterEach(function (done) {
         //  Clear contents of each temp db file
         var functions = [];
-        Object.keys(tempFiles).forEach(function (key) {
+        Object.keys(model._db).forEach(function (key) {
             functions.push(function (cb) {
                 model._db[key].remove({}, { multi: true }, cb);
             });

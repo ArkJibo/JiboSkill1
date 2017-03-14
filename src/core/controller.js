@@ -7,6 +7,7 @@ var events = require('./event/event');
 var errors = require('../errors');
 var util = require('../util');
 var _ = require('lodash');
+var config = require('config');
 var async = require('async');
 
 class Controller {
@@ -17,9 +18,12 @@ class Controller {
     constructor (eventBus) {
         var self = this;
 
+        //  DB files differ based on NODE_ENV
+        var db = config.get('model.db');
+
         self._eventBus = eventBus;
-        self._model = new Model();
-        self._emailClient = new EmailClient();
+        self._model = new Model(db);
+        self._emailClient = new EmailClient('BIG FAKE NAME', eventBus);
         self._bookkeeper = new BookKeeper();
 
         //  Register event listeners

@@ -20,9 +20,15 @@ var expect = require('chai').expect;
 var moment = require('moment');
 
 describe('Controller', function () {
-    var eventBus = new EventBus();
-    var controller = new Controller(eventBus);
+    var eventBus;
+    var controller;
     var presentTime = moment();
+
+    before(function (done) {
+        eventBus = new EventBus();
+        controller = new Controller(eventBus);
+        done();
+    });
 
     var tempFiles = {
         'events': './db/test-events.db',
@@ -61,23 +67,10 @@ describe('Controller', function () {
         });
     });
 
-    before(function (done) {
-        //  Use temporary db files for testing
-        var functions = [];
-        Object.keys(tempFiles).forEach(key => {
-            controller._model._db[key] = new Datastore(tempFiles[key]);
-            functions.push(function (cb) {
-                controller._model._db[key].loadDatabase();
-                cb();
-            });
-        });
-        async.parallel(functions, done);
-    });
-
     afterEach(function (done) {
         //  Clear contents of each temp db file
         var functions = [];
-        Object.keys(tempFiles).forEach(function (key) {
+        Object.keys(controller._model._db).forEach(function (key) {
             functions.push(function (cb) {
                 controller._model._db[key].remove({}, { multi: true }, cb);
             });

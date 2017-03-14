@@ -19,6 +19,9 @@ jibo.init('face', function(err) {
     let root = jibo.bt.create('../behaviors/main');
     root.start();
 
+    var eventBus = new EventBus();
+    var controller = new Controller(eventBus);
+
     // Listen for the jibo main update loop
     jibo.timer.on('update', function(elapsed) {
         // If the tree is in progress, keep updating

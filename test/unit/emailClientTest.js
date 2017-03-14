@@ -21,29 +21,27 @@ describe("Email Client test:", function() {
   var event_Bus;
 
   before(function () {
-    //Instantiate email Client class 
+    //Instantiate email Client class
     event_Bus = new eventBus();
     email_Client = new emailClient("Roy Kim", event_Bus);
-
-    
   });
 
   describe("Checking email functionality:", function() {
 
     it("Check inbox with no new email", function(done) {
-      //intiating checking email client 
+      //intiating checking email client
       email_Client._checkEmails();
       //loadstatus make sure that there is a reponse from server before we check
       email_Client._loadStatus().done(function(status){
-        //there should be no new email 
+        //there should be no new email
         expect(status).to.equal("No new mail");
-        //indicating that the test is done 
+        //indicating that the test is done
         done();
       });
     });
 
     it("Check inbox with new email and sending email with event listener", function(done) {
-      //send email to ourself 
+      //send email to ourself
       var listenCheck = false;
       //start listen event bus
       event_Bus.addEventListener(eventObj["RECEIVED_EMAIL"], email_Client , function(res){
@@ -68,23 +66,23 @@ describe("Email Client test:", function() {
       event_Bus.emitEvent(eventObj['SEND_EMAIL'], content);
 
       console.log("Alert: Sending a test email");
-      //loadsendcheck make sure the email was sent before we check whether we received it 
+      //loadsendcheck make sure the email was sent before we check whether we received it
       email_Client._loadSendCheck().done(function(check){
         setTimeout(function(){
           console.log("Alert: checking");
-          //there should be new email 
+          //there should be new email
           email_Client._loadStatus().done(function(status){
-            //there should be no new email 
+            //there should be no new email
             expect(status).to.equal("New mail");
             expect(listenCheck).to.equal(true);
-            //indicating that the test is done 
+            //indicating that the test is done
             done();
           });
         }, 5000);
       });
     });
   });
-  
+
   describe("Changing email client variable:", function(){
     it("Changing username", function(){
       //changing username
@@ -98,12 +96,12 @@ describe("Email Client test:", function() {
       email_Client._loadChangeCheck().done(function(changeCheck){
         //changechek is bool variable that is true when it is changed
         expect(changeCheck).to.equal(true);
-        //check new email 
+        //check new email
         expect(email_Client._email).to.equal("kimr07175@gmail.com");
-        //send using this new email info to make sure it is changed successfully 
+        //send using this new email info to make sure it is changed successfully
         email_Client._sendEmail("Ben Lee", "eagle2417@gmail.com", "Hi", "Hello", null);
         email_Client._loadSendCheck().done(function(check){
-          //email should be send successfully 
+          //email should be send successfully
           expect(check).to.equal(true);
           done();
         });
@@ -112,4 +110,3 @@ describe("Email Client test:", function() {
   });
 
 });
-
