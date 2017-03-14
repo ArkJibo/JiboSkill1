@@ -92,7 +92,6 @@ describe('Controller', function () {
                 type: 'update-password',
                 password: 'buntimes'
             }], function (err, docs) {
-                console.log('inserted first set');
                 expect(err).to.not.exist;
 
                 controller._model._db.events.insert({
@@ -156,7 +155,6 @@ describe('Controller', function () {
                     '}' +
                 '}',
                 _cb: function (err, docs) {
-                    console.log('in cb');
                     expect(err).to.not.exist;
                     expect(docs.length).to.equal(4);
                     expect(docs[0].add[0].type).to.equal('filler');
