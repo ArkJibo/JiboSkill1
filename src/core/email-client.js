@@ -92,13 +92,12 @@ class EmailClient {
         self._eventBus = eventBus;
 
         //added an event listener for sending email
-        self._eventBus.addEventListener(eventObj['SEND_EMAIL'], function(res){
+        self._eventBus.addEventListener(eventObj['SEND_EMAIL'], this , function(res){
             self._sendEmail(res.fromName, res.fromEmail, res.subject, res.body, res.attachments);
         });
        
         getFreshImap(function (err, imap, email, smtpConfig) {
-            if (err) {
-                console.log(err);
+            if (err) {        
             } else {
                 self._imap.resolve(imap);
                 self._email = email;
@@ -151,15 +150,13 @@ class EmailClient {
         };
 
         jsonfile.writeFile("./email.json", obj, function (err) {
-            if (err){
-                console.log(err);
+            if (err){   
                 return;
             }
-            console.log("email.json was updated!");
-
+            
             getFreshImap(function (err, imap, email, smtpConfig) {
                 if (err) {
-                    console.log(err);
+                    
                 } else {
                     self._imap.resolve(imap);
                     self._email = email;
@@ -185,7 +182,6 @@ class EmailClient {
         var files = [];
         if (attachments){
             for (var i = 0; i < attachments.length; i++){
-                
                 files.push({
                     path: attachments[i]
                 });
@@ -199,7 +195,7 @@ class EmailClient {
             subject: subject, // Subject line
             text: text, // plaintext body
             attachments: files //attachments
-        }
+        };
 
         // send mail with defined transport object
         self._loadTransporter().done(function (transporter){
@@ -207,12 +203,9 @@ class EmailClient {
             // send mail with defined transport object
             self._transporter.sendMail(mailOptions, function(error, info){
                 if(error){
-                    console.log(error);
                     return;
                 }
-                self._SendCheck.resolve(true);
-                console.log('Message sent: ' + info.response);
-                
+                self._SendCheck.resolve(true);                
             });
         });   
     }
@@ -232,7 +225,6 @@ class EmailClient {
                     var collectUnseenEmails = function () {
                         self._imap.search(['UNSEEN'], function (err, results) {
                             if (err || results.length === 0) {
-                                console.log(err || 'NO NEW MAIL');
                                 self._status.resolve("No new mail");
                                 self._status = Q.defer();
                                 return;
@@ -241,26 +233,16 @@ class EmailClient {
                             //  Fetch the entire email bodies
                             var f = self._imap.fetch(results, {
                                 bodies: [''],
-                                markSeen: false //don't mark as seen until the user actually sees it 
+                                markSeen: true //don't mark as seen until the user actually sees it 
                             });
 
                             f.on('message', function (msg, seqno) {
                                 var parser = new MailParser();
                                 parser.on('end', function (mail) {
-                                    //  Done parsing
-                                    console.log('NEW MAIL!');
-                                    console.log(
-                                        'From: ' + mail.from[0].address + '\n' +
-                                        'Name: ' + mail.from[0].name + '\n' + 
-                                        'Subject: ' + mail.subject + '\n' +
-                                        'Body:' + mail.text
-                                    );
-                                    
+   
                                     var nameField = (mail.from[0].name).split(" ");
-
                                     var firstName = nameField[0];
                                     var lastName = nameField[1];
-
                                     var content = {
                                         time: mail.date,
                                         fromEmail: mail.from[0].address,
@@ -296,15 +278,13 @@ class EmailClient {
             });
 
             self._imap.on('error', function (err) {
-                console.log(err);
-                console.log('Trying again in 10 seconds...');
                 self._imap.end();
 
                 //  Get a new Imap to work with
                 getFreshImap(function (err, imap) {
                     if (err) {
-                        console.log(err);
-                    } else {
+                    } 
+                    else {
                         self._imap = imap;
 
                         //  Try again in 10 sec

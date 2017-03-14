@@ -22,10 +22,49 @@ var moment = require('moment');
 describe('Controller', function () {
     var eventBus;
     var controller;
-    var presentTime = moment().format();
-    before(function () {
+    var presentTime = moment();
+
+    before(function (done) {
         eventBus = new EventBus();
         controller = new Controller(eventBus);
+        done();
+    });
+
+    var tempFiles = {
+        'events': './db/test-events.db',
+        'reminderQueue': './db/test-reminderQueue.db',
+        'inventory': './db/test-inventory.db',
+        'patient': './db/test-patient.db',
+        'people': './db/test-people.db',
+        'media': './db/test-media.db',
+        'entertainment': './db/test-entertainment.db',
+        'voice': './db/test-voice.db',
+        'credentials': './db/test-credentials.db'
+    };
+
+    var cleanup = function (cb) {
+        //  Delete the temp db files
+        var funcs = [];
+        Object.keys(tempFiles).forEach(function (key) {
+            funcs.push(function(cb) {
+                fs.unlink(tempFiles[key], function (err) {
+                    expect(err).to.not.exist;
+                    cb();
+                });
+            });
+        });
+        async.parallel(funcs, cb);
+    };
+
+    //  For cleaning up on ctrl+c
+    var rl = require('readline').createInterface({
+        input: process.stdin,
+        output: process.stdout
+    });
+    rl.on('SIGINT', function () {
+        cleanup(function () {
+            process.exit();
+        });
     });
 
     afterEach(function (done) {
@@ -53,6 +92,7 @@ describe('Controller', function () {
                 type: 'update-password',
                 password: 'buntimes'
             }], function (err, docs) {
+                console.log('inserted first set');
                 expect(err).to.not.exist;
 
                 controller._model._db.events.insert({
@@ -116,6 +156,7 @@ describe('Controller', function () {
                     '}' +
                 '}',
                 _cb: function (err, docs) {
+                    console.log('in cb');
                     expect(err).to.not.exist;
                     expect(docs.length).to.equal(4);
                     expect(docs[0].add[0].type).to.equal('filler');
@@ -174,7 +215,7 @@ describe('Controller', function () {
                 fromLastName: 'Trump',
                 subject: 'Everything is just fantastic',
                 body: 'Absolutely fantastic',
-                date: presentTime,
+                date: presentTime.format('x'),
                 _cb: function (err, docs) {
                     expect(err).to.not.exist;
                     expect(docs[0].fromEmail).to.equal('random@gmail.com');
@@ -240,19 +281,19 @@ describe('Controller', function () {
                 first: 'Bob',
                 last: 'Marley',
                 relationship: 'friend',
-                birthday: presentTime,
+                birthday: presentTime.format('x'),
                 closeness: 8
             }, {
                 first: 'Joe',
                 last: 'Campbell',
                 relationship: 'advisor',
-                birthday: presentTime,
+                birthday: presentTime.format('x'),
                 closeness: 2
             }, {
                 first: 'Sally',
                 last: 'Chen',
                 relationship: 'sister-in-law',
-                birthday: presentTime,
+                birthday: presentTime.format('x'),
                 closeness: 9
             }], function (err, docs) {
                 expect(err).to.not.exist;
@@ -269,7 +310,7 @@ describe('Controller', function () {
                         } else if (trivia.question.includes('your relationship with')) {
                             expect(['friend', 'sister-in-law']).to.include(trivia.answer);
                         } else {
-                            expect(trivia.answer).to.equal(presentTime);
+                            expect(trivia.answer).to.equal(presentTime.format('x'));
                         }
 
                         done();
@@ -284,19 +325,19 @@ describe('Controller', function () {
                 first: 'Bob',
                 last: 'Marley',
                 relationship: 'friend',
-                birthday: presentTime,
+                birthday: presentTime.format('x'),
                 closeness: 3
             }, {
                 first: 'Joe',
                 last: 'Campbell',
                 relationship: 'advisor',
-                birthday: presentTime,
+                birthday: presentTime.format('x'),
                 closeness: 2
             }, {
                 first: 'Sally',
                 last: 'Chen',
                 relationship: 'sister-in-law',
-                birthday: presentTime,
+                birthday: presentTime.format('x'),
                 closeness: 2
             }], function (err, docs) {
                 expect(err).to.not.exist;
@@ -313,7 +354,7 @@ describe('Controller', function () {
                         } else if (trivia.question.includes('your relationship with')) {
                             expect(['friend', 'advisor', 'sister-in-law']).to.include(trivia.answer);
                         } else {
-                            expect(trivia.answer).to.equal(presentTime);
+                            expect(trivia.answer).to.equal(presentTime.format('x'));
                         }
 
                         done();
@@ -365,7 +406,7 @@ describe('Controller', function () {
         it('should pass on the call to model', function (done) {
             eventBus.emitEvent(events.UNKNOWN_USER_INPUT, {
                 input: 'I said something super confusing',
-                date: presentTime,
+                date: presentTime.format('x'),
                 _cb: function () {
                     done();
                 }
