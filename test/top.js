@@ -44,7 +44,6 @@ describe('Top level for all tests', function () {
 
     //  Run unit tests
     var unitTests = fs.readdirSync('./test/unit/');
-
     unitTests.map(function (file) {
         return path.join(__dirname, 'unit', file);
     }).forEach(function (test) {
@@ -52,7 +51,20 @@ describe('Top level for all tests', function () {
             //  Skip for now until test is fixed
             return;
         }
-        describe(test, function () {
+        describe(path.basename(test).toUpperCase(), function () {
+            require(test);
+        });
+    });
+
+    //  Run functional tests
+    var funcTests = fs.readdirSync('./test/func/');
+    funcTests.map(function (file) {
+        return path.join(__dirname, 'func', file);
+    }).forEach(function (test) {
+        if (test.includes('test-events')) {
+            return;
+        }
+        describe(path.basename(test).toUpperCase(), function () {
             require(test);
         });
     });

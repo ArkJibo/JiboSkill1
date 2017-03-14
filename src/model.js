@@ -10,7 +10,7 @@ var async = require('async');
 var _ = require('lodash');
 var crypto = require('crypto');
 
-var minRepeatInfoKeys = ['startTime', 'interval', 'endTime'];
+var minRepeatInfoKeys = ['interval', 'endTime'];
 var minReminderInfoKeys = ['numReminders', 'interval', 'startTime'];
 
 var minCollectionKeys = {};
@@ -48,6 +48,7 @@ minCollectionKeys[util.COLLECTION_TYPE.EMAIL] = {
 
 var dateKeys = ['time', 'date', 'lastTaken', 'startTime', 'endTime', 'birthday', 'dateAdded', 'lastUsed'];
 var timeModifiers = {
+    mm: 'minutes',
     h: 'hours',
     d: 'days',
     w: 'weeks',
@@ -162,12 +163,9 @@ class Model {
     getNextReminder (cb) {
         var self = this;
 
-        //  First remove any expired reminders
+        //  First remove any viewed reminders
         self._removeFromCollection(util.COLLECTION_TYPE.REMINDER_QUEUE, {
-            time: {
-                $lte: moment().format('x')
-            },
-            viewed: true    //  Only remove ones that have been viewed
+            viewed: true
         }, removeOptions, function (err, numRemoved) {
             if (err) {
                 cb(err);
@@ -179,6 +177,8 @@ class Model {
                     { time: 1 },    //  1 means ascending order
                     function (err, docs) {
                         //  Return earliest reminder
+                        // console.log('DIS WHAT I GOT');
+                        // console.log(docs);
                         cb(err, docs.length === 0 ? docs : docs[0]);
                     }
                 );
@@ -321,7 +321,7 @@ class Model {
                     if (err) {
                         cb(err);
                     } else {
-                        var events = [params];
+                        var events = [];
 
                         //  Check for repeat info
                         if (params.repeatInfo) {
@@ -329,7 +329,7 @@ class Model {
                             delete params.repeatInfo;
 
                             //  Add all events leading up to end time
-                            var currTime = moment(parseInt(repeatInfo.startTime, 10));
+                            var currTime = moment(parseInt(params.time, 10));
                             while (currTime.format('x') <= moment(parseInt(repeatInfo.endTime, 10)).format('x')) {
                                 //  Update time value and add to array
                                 var newParams = _.cloneDeep(params);
@@ -689,6 +689,23 @@ class Model {
     _clearCollection (collection, cb) {
         var self = this;
         self._db[collection].remove({}, { multi: true }, cb);
+    }
+
+    /**
+     * Wipes everything good lord have mercy
+     * @param cb Callback
+     */
+    _clearDatabase (cb) {
+        var self = this;
+
+        var funcs = [];
+        Object.keys(self._db).forEach(function (collection) {
+            funcs.push(function (cb) {
+                self._clearCollection(collection, cb);
+            });
+        });
+
+        async.parallel(funcs, cb);
     }
 }
 
