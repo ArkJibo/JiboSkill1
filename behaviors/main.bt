@@ -7,7 +7,11 @@
         "children": [
             "29c07075-d765-4f2b-af75-3c9532a2e306",
             "8ee52483-66b8-41a1-b1e2-8afb90a53aab",
-            "6cf1f411-f86d-48d2-b898-72a997ac5326"
+            "6cf1f411-f86d-48d2-b898-72a997ac5326",
+            "1db74c5d-73f4-441e-89aa-c0e119c00441",
+            "c0d2011c-0119-4557-9f0a-e97379489b2c",
+            "d9792ffb-ed4b-4cf0-8067-9fb72a7b0f4c",
+            "64647a0f-9878-4985-a5d7-19ff19914650"
         ],
         "decorators": [
             "c5468334-737e-4b4b-aa09-5fc1c6b7f477"
@@ -48,7 +52,7 @@
             "onResult": [
                 "(listener) => {",
                 "\tlistener.on('hey-jibo', function(asrResult, speakerIds) {",
-                "",
+                "\t\t",
                 "\t});",
                 "}"
             ]
@@ -90,14 +94,19 @@
             "onResult": [
                 "(listener) => {",
                 "    listener.on('cloud', function(asrResult, speakerIds) {",
-                "        var mainListener = require('../listeners/main');",
-                "        mainListener(asrResult, speakerIds);",
+                "        notepad.asrResult = asrResult;",
+                "        notepad.speakerIds = speakerIds;",
+                "        ",
+                "        ",
+                "        ",
+                "",
                 "    });",
                 "}"
             ]
         },
         "asset-pack": "core",
-        "parent": 1
+        "parent": 1,
+        "decorators": []
     },
     "c5468334-737e-4b4b-aa09-5fc1c6b7f477": {
         "id": "c5468334-737e-4b4b-aa09-5fc1c6b7f477",
@@ -115,5 +124,148 @@
             ]
         },
         "asset-pack": "core"
+    },
+    "c0d2011c-0119-4557-9f0a-e97379489b2c": {
+        "id": "c0d2011c-0119-4557-9f0a-e97379489b2c",
+        "class": "TextToSpeechJs",
+        "name": "",
+        "options": {
+            "getWords": [
+                "(callback) => {",
+                "  notepad.counter = 0; ",
+                "  notepad.passCount = 0;",
+                "  notepad.failCount = 0; ",
+                "  notepad.loopSize = notepad.testRes.length;",
+                "  callback(\"Result: \");",
+                "}"
+            ],
+            "onWord": [
+                "(word) => {",
+                "}"
+            ]
+        },
+        "asset-pack": "core",
+        "parent": 1,
+        "decorators": [
+            "b5d813bc-db82-4fc2-9abc-1c237579c8e8"
+        ]
+    },
+    "b5d813bc-db82-4fc2-9abc-1c237579c8e8": {
+        "id": "b5d813bc-db82-4fc2-9abc-1c237579c8e8",
+        "class": "StartOnEvent",
+        "name": "",
+        "options": {
+            "eventName": "testFinished",
+            "onEvent": [
+                "() => {",
+                "}"
+            ]
+        },
+        "asset-pack": "core"
+    },
+    "d9792ffb-ed4b-4cf0-8067-9fb72a7b0f4c": {
+        "id": "d9792ffb-ed4b-4cf0-8067-9fb72a7b0f4c",
+        "class": "TextToSpeechJs",
+        "name": "",
+        "options": {
+            "getWords": [
+                "(callback) => {",
+                "  var resultObj = notepad.testRes;",
+                "  ",
+                "  var counter = notepad.counter;",
+                "  var result = \"\";",
+                "  if (resultObj[counter][\"passed\"] == true){ //test passed",
+                "    result += ('Test Name: \"' + resultObj[counter][\"title\"] + '\" Passed\\t'); ",
+                "    notepad.passCount += 1;",
+                "  }",
+                "  else{ //test failed",
+                "    result += ('Test Name: \"' + resultObj[counter][\"title\"] + '\" Failed with \"' + resultObj[counter][\"error\"] + '\"');",
+                "    notepad.failCount += 1;",
+                "  }",
+                "  notepad.counter += 1;",
+                "  callback(result);",
+                "}"
+            ],
+            "onWord": [
+                "(word) => {",
+                "}"
+            ]
+        },
+        "asset-pack": "core",
+        "parent": 1,
+        "decorators": [
+            "80b5ef82-7ddd-49a0-b011-835f2fd752a0"
+        ]
+    },
+    "80b5ef82-7ddd-49a0-b011-835f2fd752a0": {
+        "id": "80b5ef82-7ddd-49a0-b011-835f2fd752a0",
+        "class": "WhileCondition",
+        "name": "",
+        "options": {
+            "init": [
+                "() => {",
+                "  ",
+                "}"
+            ],
+            "conditional": [
+                "() => {",
+                "  if (notepad.counter < notepad.loopSize) {",
+                "    ",
+                "    return true;",
+                "  }",
+                "  return false;",
+                "}"
+            ]
+        },
+        "asset-pack": "core"
+    },
+    "64647a0f-9878-4985-a5d7-19ff19914650": {
+        "id": "64647a0f-9878-4985-a5d7-19ff19914650",
+        "class": "TextToSpeechJs",
+        "name": "",
+        "options": {
+            "getWords": [
+                "(callback) => {",
+                "    callback(notepad.passCount + ' passed. ' + notepad.failCount + ' failed.');",
+                "}"
+            ],
+            "onWord": [
+                "(word) => {",
+                "}"
+            ]
+        },
+        "asset-pack": "core",
+        "parent": 1
+    },
+    "1db74c5d-73f4-441e-89aa-c0e119c00441": {
+        "id": "1db74c5d-73f4-441e-89aa-c0e119c00441",
+        "class": "TextToSpeechJs",
+        "name": "",
+        "options": {
+            "getWords": [
+                "(callback) => {",
+                "    callback('Staring tests...');",
+                "    var Q = require('q');",
+                "    var testClient = require('../listeners/test-client');",
+                "    var test_Client = new testClient();",
+                "    ",
+                "    test_Client._runTest(notepad.asrResult, notepad.speakerIds);",
+                "    ",
+                "    //wait until test finishes",
+                "    test_Client._getTestResult().done(",
+                "      function(testResult){",
+                "        notepad.testRes = testResult;",
+                "        emitter.emit('testFinished');",
+                "      }",
+                "    );",
+                "}"
+            ],
+            "onWord": [
+                "(word) => {",
+                "}"
+            ]
+        },
+        "asset-pack": "core",
+        "parent": 1
     }
 }
