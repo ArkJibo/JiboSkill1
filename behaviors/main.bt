@@ -8,10 +8,8 @@
             "29c07075-d765-4f2b-af75-3c9532a2e306",
             "8ee52483-66b8-41a1-b1e2-8afb90a53aab",
             "6cf1f411-f86d-48d2-b898-72a997ac5326",
-            "1db74c5d-73f4-441e-89aa-c0e119c00441",
-            "c0d2011c-0119-4557-9f0a-e97379489b2c",
-            "d9792ffb-ed4b-4cf0-8067-9fb72a7b0f4c",
-            "64647a0f-9878-4985-a5d7-19ff19914650"
+            "d28c1b4c-ba12-4196-8948-d92727e723a3",
+            "ffa85382-a745-4153-8a9d-767f6b41a3df"
         ],
         "decorators": [
             "c5468334-737e-4b4b-aa09-5fc1c6b7f477"
@@ -132,11 +130,16 @@
         "options": {
             "getWords": [
                 "(callback) => {",
-                "  notepad.counter = 0; ",
-                "  notepad.passCount = 0;",
-                "  notepad.failCount = 0; ",
-                "  notepad.loopSize = notepad.testRes.length;",
-                "  callback(\"Result: \");",
+                "  var testClient = notepad.testClient;",
+                "  ",
+                "  testClient.getTestResult().done(",
+                "    function(testResult){",
+                "      notepad.testRes = testResult;",
+                "      testClient.resetPromise();",
+                "      callback(\"Result: \");",
+                "    }",
+                "  );",
+                "  ",
                 "}"
             ],
             "onWord": [
@@ -145,23 +148,8 @@
             ]
         },
         "asset-pack": "core",
-        "parent": 1,
-        "decorators": [
-            "b5d813bc-db82-4fc2-9abc-1c237579c8e8"
-        ]
-    },
-    "b5d813bc-db82-4fc2-9abc-1c237579c8e8": {
-        "id": "b5d813bc-db82-4fc2-9abc-1c237579c8e8",
-        "class": "StartOnEvent",
-        "name": "",
-        "options": {
-            "eventName": "testFinished",
-            "onEvent": [
-                "() => {",
-                "}"
-            ]
-        },
-        "asset-pack": "core"
+        "parent": "99aaf769-ba16-44fa-9a40-8caffea17bc0",
+        "decorators": []
     },
     "d9792ffb-ed4b-4cf0-8067-9fb72a7b0f4c": {
         "id": "d9792ffb-ed4b-4cf0-8067-9fb72a7b0f4c",
@@ -192,7 +180,7 @@
             ]
         },
         "asset-pack": "core",
-        "parent": 1,
+        "parent": "99aaf769-ba16-44fa-9a40-8caffea17bc0",
         "decorators": [
             "80b5ef82-7ddd-49a0-b011-835f2fd752a0"
         ]
@@ -204,12 +192,15 @@
         "options": {
             "init": [
                 "() => {",
-                "  ",
+                "  notepad.counter = 0; ",
+                "  notepad.passCount = 0;",
+                "  notepad.failCount = 0; ",
+                "  notepad.loopSize = notepad.testRes.length;",
                 "}"
             ],
             "conditional": [
                 "() => {",
-                "  if (notepad.counter < notepad.loopSize) {",
+                "  if (notepad.counter <= notepad.loopSize) {",
                 "    ",
                 "    return true;",
                 "  }",
@@ -235,29 +226,73 @@
             ]
         },
         "asset-pack": "core",
-        "parent": 1
+        "parent": "99aaf769-ba16-44fa-9a40-8caffea17bc0"
     },
-    "1db74c5d-73f4-441e-89aa-c0e119c00441": {
-        "id": "1db74c5d-73f4-441e-89aa-c0e119c00441",
+    "ffa85382-a745-4153-8a9d-767f6b41a3df": {
+        "id": "ffa85382-a745-4153-8a9d-767f6b41a3df",
+        "class": "Switch",
+        "name": "switch test cases",
+        "options": {},
+        "asset-pack": "core",
+        "parent": 1,
+        "children": [
+            "99aaf769-ba16-44fa-9a40-8caffea17bc0",
+            "c200d34b-4356-4904-92ce-eb34cd1812f9"
+        ],
+        "decorators": []
+    },
+    "99aaf769-ba16-44fa-9a40-8caffea17bc0": {
+        "id": "99aaf769-ba16-44fa-9a40-8caffea17bc0",
+        "class": "Sequence",
+        "name": "",
+        "options": {},
+        "asset-pack": "core",
+        "parent": "ffa85382-a745-4153-8a9d-767f6b41a3df",
+        "children": [
+            "c0d2011c-0119-4557-9f0a-e97379489b2c",
+            "d9792ffb-ed4b-4cf0-8067-9fb72a7b0f4c",
+            "64647a0f-9878-4985-a5d7-19ff19914650"
+        ],
+        "decorators": [
+            "18d1b9d4-2155-4867-95f9-e041f1345b1d"
+        ]
+    },
+    "18d1b9d4-2155-4867-95f9-e041f1345b1d": {
+        "id": "18d1b9d4-2155-4867-95f9-e041f1345b1d",
+        "class": "Case",
+        "name": "",
+        "options": {
+            "conditional": [
+                "() => {",
+                "  return notepad.statusObj[\"status\"] === true;",
+                "}"
+            ]
+        },
+        "asset-pack": "core"
+    },
+    "d28c1b4c-ba12-4196-8948-d92727e723a3": {
+        "id": "d28c1b4c-ba12-4196-8948-d92727e723a3",
         "class": "TextToSpeechJs",
         "name": "",
         "options": {
             "getWords": [
                 "(callback) => {",
-                "    callback('Staring tests...');",
-                "    var Q = require('q');",
-                "    var testClient = require('../listeners/test-client');",
-                "    var test_Client = new testClient();",
-                "    ",
-                "    test_Client._runTest(notepad.asrResult, notepad.speakerIds);",
-                "    ",
-                "    //wait until test finishes",
-                "    test_Client._getTestResult().done(",
-                "      function(testResult){",
-                "        notepad.testRes = testResult;",
-                "        emitter.emit('testFinished');",
-                "      }",
-                "    );",
+                "  var Q = require('q');",
+                "  var testClient = require('../listeners/test-client');",
+                "  var test_Client = new testClient();",
+                "  ",
+                "  test_Client.runTest(notepad.asrResult, notepad.speakerIds);",
+                "  ",
+                "  test_Client.getTestName().done(",
+                "    function(name){",
+                "      notepad.statusObj = name;",
+                "      notepad.testClient = test_Client;",
+                "      console.log(\"status: \", name[\"status\"]);",
+                "      callback(name[\"msg\"]);",
+                "      ",
+                "    }",
+                "  );",
+                "  ",
                 "}"
             ],
             "onWord": [
@@ -267,5 +302,42 @@
         },
         "asset-pack": "core",
         "parent": 1
+    },
+    "c200d34b-4356-4904-92ce-eb34cd1812f9": {
+        "id": "c200d34b-4356-4904-92ce-eb34cd1812f9",
+        "class": "TextToSpeechJs",
+        "name": "",
+        "options": {
+            "getWords": [
+                "(callback) => {",
+                "  callback(\"Exiting testing\");",
+                "  var testClient = notepad.testClient;",
+                "  testClient.resetPromise();",
+                "  ",
+                "}"
+            ],
+            "onWord": [
+                "(word) => {",
+                "}"
+            ]
+        },
+        "asset-pack": "core",
+        "parent": "ffa85382-a745-4153-8a9d-767f6b41a3df",
+        "decorators": [
+            "242b5732-7995-4c58-8e15-e0ce9df1bfd7"
+        ]
+    },
+    "242b5732-7995-4c58-8e15-e0ce9df1bfd7": {
+        "id": "242b5732-7995-4c58-8e15-e0ce9df1bfd7",
+        "class": "Case",
+        "name": "",
+        "options": {
+            "conditional": [
+                "() => {",
+                "  return notepad.statusObj[\"status\"] === false;",
+                "}"
+            ]
+        },
+        "asset-pack": "core"
     }
 }

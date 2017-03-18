@@ -34,12 +34,6 @@ module.exports = function (grunt) {
                     timeout: 10000
                 },
                 src: ['test/top.js']
-            },
-            email: {
-                options: {
-                    timeout: 10000
-                },
-                src: ['test/email/emailClientTest.js']
             }
         },
         env: {
