@@ -331,9 +331,9 @@ describe('Controller', function () {
     describe('#_fetchNextReminder()', function () {
         it('should pass on the call to model', function (done) {
             eventBus.emitEvent(events.FETCH_NEXT_REMINDER, {
-                _cb: function (err, docs) {
+                _cb: function (err, reminder) {
                     expect(err).to.not.exist;
-                    expect(docs.length).to.equal(0);
+                    expect(reminder).to.be.null;
                     done();
                 }
             });

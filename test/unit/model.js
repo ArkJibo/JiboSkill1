@@ -299,9 +299,9 @@ describe('Model', function () {
         });
 
         it('should not break if no reminders', function (done) {
-            model.getNextReminder(function (err, docs) {
+            model.getNextReminder(function (err, reminder) {
                 expect(err).to.not.exist;
-                expect(docs.length).to.equal(0);
+                expect(reminder).to.be.null;
                 done();
             });
         });

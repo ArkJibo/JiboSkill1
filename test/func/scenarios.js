@@ -11,7 +11,7 @@ var Controller = proxyquire('../../src/core/controller', {
 var EventBus = require('../../src/core/event/event-bus');
 var events = require('../../src/core/event/event');
 var util = require('../../src/util');
-var testEvents = require('./test-events');
+var testEvents = require('../test-events');
 
 var expect = require('chai').expect;
 var async = require('async');
@@ -30,10 +30,13 @@ describe('Scenario Based Functional Tests', function () {
             expect(err).to.not.exist;
             done();
         });
+
+        //  Reset testEvents because it gets modified (shouldn't be a problem in production)
+        testEvents = require('../test-events');
     });
 
-    describe('Queueing reminders based on calendar events', function () {
-        before(function (done) {
+    describe('Handling reminders of calendar events', function () {
+        beforeEach(function (done) {
             //  Add the calendar events
             var funcs = [];
             testEvents.forEach(function (evt) {
@@ -88,7 +91,7 @@ describe('Scenario Based Functional Tests', function () {
 
                                 if (i >= docs.length) {
                                     //  Just to make sure all reminders get flagged
-                                    expect(reminder.length).to.equal(0);
+                                    expect(reminder).to.be.null;
                                     cb();
                                 } else {
                                     expect(reminder.time).to.equal(expectedTimes[i]);
@@ -114,6 +117,61 @@ describe('Scenario Based Functional Tests', function () {
 
                     async.series(funcs, function () {
                         done();
+                    });
+                }
+            });
+        });
+
+        it('should correctly repeat reminders that are not flagged', function (done) {
+            eventBus.emitEvent(events.FILL_REMINDER_QUEUE, {
+                _cb: function (err, docs) {
+                    expect(err).to.not.exist;
+                    expect(docs.length).to.equal(16);
+
+                    //  Get first reminder for comparison
+                    eventBus.emitEvent(events.FETCH_NEXT_REMINDER, {
+                        _cb: function (err, reminder) {
+                            expect(err).to.not.exist;
+
+                            var currReminder = reminder;
+                            var flagged = false;
+
+                            // Get reminders until no more
+                            async.forever(function (next) {
+                                //  Keep getting next reminder
+                                eventBus.emitEvent(events.FETCH_NEXT_REMINDER, {
+                                    _cb: function (err, reminder) {
+                                        expect(err).to.not.exist;
+                                        if (!reminder) {
+                                            //  Out of reminders, end the loop
+                                            next('all done');
+                                        } else {
+                                            currReminder = flagged ? reminder : currReminder;
+                                            expect(reminder).to.eql(currReminder);
+
+                                            //  50/50 chance to flag reminder
+                                            if (Math.random() >= 0.5) {
+                                                //  Flag it
+                                                flagged = true;
+                                                eventBus.emitEvent(events.FLAG_REMINDER, {
+                                                    id: reminder._id,
+                                                    _cb: function (err) {
+                                                        expect(err).to.not.exist;
+                                                        next();
+                                                    }
+                                                });
+                                            } else {
+                                                flagged = false;
+                                                next();
+                                            }
+                                        }
+                                    }
+                                });
+                            }, function (err) {
+                                //  No more reminders
+                                done();
+                            });
+                        }
                     });
                 }
             });

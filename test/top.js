@@ -47,10 +47,6 @@ describe('Top level for all tests', function () {
     unitTests.map(function (file) {
         return path.join(__dirname, 'unit', file);
     }).forEach(function (test) {
-        if (test.includes('emailClientTest')) {
-            //  Skip for now until test is fixed
-            return;
-        }
         describe(path.basename(test).toUpperCase(), function () {
             require(test);
         });
@@ -61,9 +57,6 @@ describe('Top level for all tests', function () {
     funcTests.map(function (file) {
         return path.join(__dirname, 'func', file);
     }).forEach(function (test) {
-        if (test.includes('test-events')) {
-            return;
-        }
         describe(path.basename(test).toUpperCase(), function () {
             require(test);
         });

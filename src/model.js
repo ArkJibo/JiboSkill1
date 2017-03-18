@@ -177,9 +177,7 @@ class Model {
                     { time: 1 },    //  1 means ascending order
                     function (err, docs) {
                         //  Return earliest reminder
-                        // console.log('DIS WHAT I GOT');
-                        // console.log(docs);
-                        cb(err, docs.length === 0 ? docs : docs[0]);
+                        cb(err, docs.length === 0 ? null : docs[0]);
                     }
                 );
             }
@@ -339,6 +337,8 @@ class Model {
                                 //  Add time interval to currTime
                                 currTime.add(repeatInfo.interval.value, timeModifiers[repeatInfo.interval.modifier]);
                             }
+                        } else {
+                            events.push(params);
                         }
 
                         self._addToCollection(type, events, cb);
@@ -645,6 +645,7 @@ class Model {
      */
     _addToCollection (collection, docs, cb) {
         var self = this;
+
         self._db[collection].insert(docs, function (err, docs) {
             if (!docs.length) {
                 //  Convert to array
