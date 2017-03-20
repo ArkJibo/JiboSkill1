@@ -132,13 +132,13 @@ describe('Model', function () {
         });
     });
 
-    describe('#getTodaySchedule()', function () {
+    describe('#getDaySchedule()', function () {
         before(function (done) {
             fillTodayEvents(done);
         });
 
         it('should return 3 events for today', function (done) {
-            model.getTodaySchedule(function (err, docs) {
+            model.getDaySchedule(presentTime, function (err, docs) {
                 expect(err).to.not.exist;
                 expect(docs.length).to.equal(3);
                 expect(docs[0].type).to.equal('fun');
