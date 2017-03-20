@@ -12,7 +12,6 @@ var EventBus = require('../../src/core/event/event-bus');
 var events = require('../../src/core/event/event');
 var util = require('../../src/util');
 var errors = require('../../src/errors');
-var assert = require('assert');
 var fs = require('fs');
 var async = require('async');
 var Datastore = require('nedb');
@@ -24,10 +23,9 @@ describe('Controller', function () {
     var controller;
     var presentTime = moment();
 
-    before(function (done) {
+    before(function () {
         eventBus = new EventBus();
         controller = new Controller(eventBus);
-        done();
     });
 
     var tempFiles = {
@@ -42,42 +40,10 @@ describe('Controller', function () {
         'credentials': './db/test-credentials.db'
     };
 
-    var cleanup = function (cb) {
-        //  Delete the temp db files
-        var funcs = [];
-        Object.keys(tempFiles).forEach(function (key) {
-            funcs.push(function(cb) {
-                fs.unlink(tempFiles[key], function (err) {
-                    expect(err).to.not.exist;
-                    cb();
-                });
-            });
-        });
-        async.parallel(funcs, cb);
-    };
-
-    //  For cleaning up on ctrl+c
-    var rl = require('readline').createInterface({
-        input: process.stdin,
-        output: process.stdout
-    });
-    rl.on('SIGINT', function () {
-        cleanup(function () {
-            process.exit();
-        });
-    });
-
     afterEach(function (done) {
         //  Clear contents of each temp db file
-        var functions = [];
-        Object.keys(controller._model._db).forEach(function (key) {
-            functions.push(function (cb) {
-                controller._model._db[key].remove({}, { multi: true }, cb);
-            });
-        });
-
-        async.parallel(functions, function (err, results) {
-            assert.equal(err, null);
+        controller._model._clearDatabase(function (err, results) {
+            expect(err).to.not.exist;
             done();
         });
     });
@@ -365,9 +331,9 @@ describe('Controller', function () {
     describe('#_fetchNextReminder()', function () {
         it('should pass on the call to model', function (done) {
             eventBus.emitEvent(events.FETCH_NEXT_REMINDER, {
-                _cb: function (err, docs) {
+                _cb: function (err, reminder) {
                     expect(err).to.not.exist;
-                    expect(docs.length).to.equal(0);
+                    expect(reminder).to.be.null;
                     done();
                 }
             });

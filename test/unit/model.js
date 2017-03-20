@@ -3,7 +3,6 @@
 
 'use strict';
 
-var assert = require('assert');
 var Datastore = require('nedb');
 var fs = require('fs');
 var async = require('async');
@@ -23,15 +22,8 @@ describe('Model', function () {
 
     afterEach(function (done) {
         //  Clear contents of each temp db file
-        var functions = [];
-        Object.keys(model._db).forEach(function (key) {
-            functions.push(function (cb) {
-                model._db[key].remove({}, { multi: true }, cb);
-            });
-        });
-
-        async.parallel(functions, function (err, results) {
-            assert.equal(err, null);
+        model._clearDatabase(function (err, results) {
+            expect(err).to.not.exist;
             done();
         });
     });
@@ -307,9 +299,9 @@ describe('Model', function () {
         });
 
         it('should not break if no reminders', function (done) {
-            model.getNextReminder(function (err, docs) {
+            model.getNextReminder(function (err, reminder) {
                 expect(err).to.not.exist;
-                expect(docs.length).to.equal(0);
+                expect(reminder).to.be.null;
                 done();
             });
         });
@@ -483,7 +475,6 @@ describe('Model', function () {
                 subtype: 'medical',
                 time: moment(presentTime).format('x'),
                 repeatInfo: {
-                    startTime: moment(presentTime).add(1, 'hours').format('x'),
                     interval: {
                         value: 2,
                         modifier: 'h'
@@ -493,11 +484,10 @@ describe('Model', function () {
                 reminderInfo: mockRemind
             }, function (err, docs) {
                 expect(err).to.not.exist;
-                expect(docs.length).to.equal(4);
+                expect(docs.length).to.equal(3);
                 expect(docs[0].time).to.equal(moment(presentTime).format('x'));
-                expect(docs[1].time).to.equal(moment(presentTime).add(1, 'hours').format('x'));
-                expect(docs[2].time).to.equal(moment(presentTime).add(3, 'hours').format('x'));
-                expect(docs[3].time).to.equal(moment(presentTime).add(5, 'hours').format('x'));
+                expect(docs[1].time).to.equal(moment(presentTime).add(2, 'hours').format('x'));
+                expect(docs[2].time).to.equal(moment(presentTime).add(4, 'hours').format('x'));
                 done();
             });
         });
@@ -784,7 +774,7 @@ describe('Model', function () {
             model._addToCollection('events', {
                 hi: 'hi'
             }, function (err, doc) {
-                assert.equal(err, null);
+                expect(err).to.not.exist;
                 expect(doc[0]).to.include.keys('hi');
                 done();
             });
@@ -795,8 +785,8 @@ describe('Model', function () {
                 { how: 'are' },
                 { you: 'doing' }
             ], function (err, docs) {
-                assert.equal(err, null);
-                assert.equal(docs.length, 2);
+                expect(err).to.not.exist;
+                expect(docs.length).to.equal(2);
                 done();
             });
         });
@@ -975,6 +965,47 @@ describe('Model', function () {
                     expect(err).to.not.exist;
                     expect(numRemoved).to.equal(3);
                     done();
+                });
+            });
+        });
+    });
+
+    describe('#_clearDatabase()', function () {
+        it('should delete everything in all collections', function (done) {
+            //  Insert a doc into every collection
+            var funcs = [];
+            Object.keys(model._db).forEach(function (collection) {
+                funcs.push(function (cb) {
+                    model._db[collection].insert([{
+                        some: 'stuff'
+                    }, {
+                        more: 'stuff'
+                    }], cb);
+                });
+            });
+
+            async.parallel(funcs, function (err, docs) {
+                expect(err).to.not.exist;
+                expect(docs.length).to.equal(Object.keys(model._db).length);
+
+                //  Now clear everything
+                model._clearDatabase(function (err, docs) {
+                    expect(err).to.not.exist;
+                    expect(docs.length).to.equal(Object.keys(model._db).length);
+
+                    //  Double check that all collections are empty
+                    funcs = [];
+                    Object.keys(model._db).forEach(function (collection) {
+                        funcs.push(function (cb) {
+                            model._db[collection].find({}, function (err, docs) {
+                                expect(err).to.not.exist;
+                                expect(docs.length).to.equal(0);
+                                cb();
+                            });
+                        });
+                    });
+
+                    async.parallel(funcs, done);
                 });
             });
         });

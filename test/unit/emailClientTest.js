@@ -2,7 +2,6 @@
 
 'use strict';
 
-var assert = require('assert');
 var Datastore = require('nedb');
 var fs = require('fs');
 var async = require('async');

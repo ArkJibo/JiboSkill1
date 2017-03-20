@@ -10,7 +10,8 @@ util.EVENT_TYPE = {
     EXERCISE: 'exercise',
     EATING: 'stock',
     SHOPPING: 'shopping',
-    BILL: 'bill'
+    BILL: 'bill',
+    SOCIAL: 'social'
 };
 
 util.COLLECTION_TYPE = {
