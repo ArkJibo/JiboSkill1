@@ -16,6 +16,27 @@ var testEvents = require('../test-events');
 var expect = require('chai').expect;
 var async = require('async');
 var moment = require('moment');
+var _ = require('lodash');
+
+var addCalendarEvents = function (eventBus, cb) {
+    //  Add the calendar events
+    var funcs = [];
+    testEvents.forEach(function (evt) {
+        funcs.push(function (cb) {
+            eventBus.emitEvent(events.DATABASE_ADD, {
+                type: util.COLLECTION_TYPE.EVENTS,
+                subtype: 'default',
+                doc: _.cloneDeep(evt),
+                _cb: cb
+            });
+        });
+    });
+
+    async.parallel(funcs, function (err, docs) {
+        expect(err).to.not.exist;
+        cb();
+    });
+};
 
 describe('Scenario Based Functional Tests', function () {
     var eventBus, controller;
@@ -30,30 +51,11 @@ describe('Scenario Based Functional Tests', function () {
             expect(err).to.not.exist;
             done();
         });
-
-        //  Reset testEvents because it gets modified (shouldn't be a problem in production)
-        testEvents = require('../test-events');
     });
 
     describe('Handling reminders of calendar events', function () {
         beforeEach(function (done) {
-            //  Add the calendar events
-            var funcs = [];
-            testEvents.forEach(function (evt) {
-                funcs.push(function (cb) {
-                    eventBus.emitEvent(events.DATABASE_ADD, {
-                        type: util.COLLECTION_TYPE.EVENTS,
-                        subtype: 'default',
-                        doc: evt,
-                        _cb: cb
-                    });
-                });
-            });
-
-            async.parallel(funcs, function (err, docs) {
-                expect(err).to.not.exist;
-                done();
-            });
+            addCalendarEvents(eventBus, done);
         });
 
         it('should have created correct reminders', function (done) {
@@ -173,6 +175,43 @@ describe('Scenario Based Functional Tests', function () {
                             });
                         }
                     });
+                }
+            });
+        });
+    });
+
+    describe('Scheduling tests of calendar events', function () {
+        beforeEach(function (done) {
+            addCalendarEvents(eventBus, done);
+        });
+
+        it('should get correct schedule for today', function (done) {
+            eventBus.emitEvent(events.FETCH_SCHEDULE, {
+                day: moment(),
+                _cb: function (err, docs) {
+                    expect(err).to.not.exist;
+                    expect(docs.length).to.equal(4);
+                    expect(docs[0].type).to.equal('eating');
+                    expect(docs[1].type).to.equal('appointment');
+                    expect(docs[2].type).to.equal('exercise');
+                    expect(docs[3].type).to.equal('medication');
+                    done();
+                }
+            });
+        });
+
+        it('should get correct schedule for future', function (done) {
+            eventBus.emitEvent(events.FETCH_SCHEDULE, {
+                day: moment().add(2, 'days'),
+                _cb: function (err, docs) {
+                    expect(err).to.not.exist;
+                    expect(docs.length).to.equal(5);
+                    expect(docs[0].type).to.equal('exercise');
+                    expect(docs[1].type).to.equal('eating');
+                    expect(docs[2].type).to.equal('bill');
+                    expect(docs[3].type).to.equal('exercise');
+                    expect(docs[4].type).to.equal('medication');
+                    done();
                 }
             });
         });
