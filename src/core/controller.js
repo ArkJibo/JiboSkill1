@@ -9,6 +9,7 @@ var util = require('../util');
 var _ = require('lodash');
 var config = require('config');
 var async = require('async');
+var moment = require('moment');
 
 class Controller {
 
@@ -227,11 +228,10 @@ class Controller {
     /**
      * Fetch schedule for the day
      */
-    _fetchSchedule () {
+    _fetchSchedule (params, cb) {
         var self = this;
-        var cb = arguments[1];
 
-        self._model.getTodaySchedule(cb);
+        self._model.getDaySchedule(params.day || moment(), cb);
     }
 
     /**

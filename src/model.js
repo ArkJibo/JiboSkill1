@@ -100,7 +100,7 @@ class Model {
         var self = this;
 
         //  Get today's events
-        self.getTodaySchedule(function (err, docs) {
+        self.getDaySchedule(moment(), function (err, docs) {
             if (err) {
                 cb(err);
             } else {
@@ -130,14 +130,15 @@ class Model {
     }
 
     /**
-     * Get the entire schedule for today
+     * Get the entire schedule for a day
+     * @param day The day to get schedule for
      * @param cb Callback
      */
-    getTodaySchedule (cb) {
+    getDaySchedule (day, cb) {
         var self = this;
 
-        var start = moment().startOf('day').format('x');
-        var end = moment().endOf('day').format('x');
+        var start = moment(day).startOf('day').format('x');
+        var end = moment(day).endOf('day').format('x');
         var params = self._processCustomMatchingParams({
             _custom: [{
                 key: 'time',

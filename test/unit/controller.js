@@ -192,6 +192,7 @@ describe('Controller', function () {
     describe('#_fetchSchedule()', function () {
         it('should get schedule from model and cb', function (done) {
             eventBus.emitEvent(events.FETCH_SCHEDULE, {
+                day: presentTime,
                 _cb: function (err, docs) {
                     expect(err).to.not.exist;
                     expect(docs.length).to.equal(0);
