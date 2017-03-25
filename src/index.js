@@ -3,6 +3,8 @@
 let jibo = require ('jibo');
 let Status = jibo.bt.Status;
 
+var EventBus = require('./core/event/event-bus');
+var Controller = require('./core/controller');
 var Model = require('./model');
 var BookKeeper = require('./core/book-keeper');
 var EmailClient = require('./core/email-client');
@@ -14,12 +16,11 @@ jibo.init('face', function(err) {
     }
 
     // Load and create the behavior tree
-    let root = jibo.bt.create('../behaviors/groove');
+    let root = jibo.bt.create('../behaviors/main');
     root.start();
 
-    jibo.model = new Model();
-    jibo.keeper = new BookKeeper();
-    jibo.email = new EmailClient();
+    var eventBus = new EventBus();
+    var controller = new Controller(eventBus);
 
     // Listen for the jibo main update loop
     jibo.timer.on('update', function(elapsed) {
@@ -28,10 +29,4 @@ jibo.init('face', function(err) {
             root.update();
         }
     });
-
-    var dbs = ['appointment', 'bill', 'entertainment', 'exercise', 'media', 'medication', 'patient', 'people', 'reminderQueue',
-        'shopping', 'stock', 'voice'];
-    for (var i = 0; i < dbs.length; i++) {
-        jibo.model._clearCollection(dbs[i]);
-    }
 });

@@ -1,0 +1,7 @@
+TopRule = $* (
+    $runTestsRule { action = 'testing' } { type = runTestsRule._type }
+);
+
+runTestsRule = run $testType { _type = testType._type } [test?s];
+
+testType @= ($w) { _type = _parsed };
