@@ -24,7 +24,8 @@ util.COLLECTION_TYPE = {
     ENTERTAINMENT: 'entertainment',
     VOICE: 'voice',
     CREDS: 'credentials',
-    EMAIL: 'emails'
+    EMAIL: 'emails',
+    METRICS: 'metrics'
 };
 
 util.MEM_STIMULANT = {

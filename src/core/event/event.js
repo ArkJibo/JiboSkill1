@@ -13,5 +13,6 @@ module.exports = {
     DATABASE_FETCH: 'db-fetch',
     DATABASE_UPDATE: 'db-update',
     DATABASE_ADD: 'db-add',
-    DATABASE_REMOVE: 'db-remove'
+    DATABASE_REMOVE: 'db-remove',
+    CLEAR_PAST_RECORDS: 'clear-past-records'
 };

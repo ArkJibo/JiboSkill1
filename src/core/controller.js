@@ -25,7 +25,7 @@ class Controller {
         self._eventBus = eventBus;
         self._model = new Model(db);
         self._emailClient = new EmailClient('BIG FAKE NAME', eventBus);
-        self._bookkeeper = new BookKeeper();
+        self._bookkeeper = new BookKeeper(eventBus);
 
         //  Register event listeners
         self._eventBus.addEventListener(events.RECEIVED_EMAIL, self, self._receivedEmail);
@@ -414,7 +414,6 @@ class Controller {
      */
     _removeFromDatabase (params, cb) {
         var self = this;
-
         self._model.removeFromCollection(params.type, params.params, cb);
     }
 }
