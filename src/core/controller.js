@@ -3,6 +3,7 @@
 var Model = require('../model');
 var EmailClient = require('./email-client');
 var BookKeeper = require('./book-keeper');
+var Metrics = require('../metrics');
 var events = require('./event/event');
 var errors = require('../errors');
 var util = require('../util');
@@ -26,6 +27,7 @@ class Controller {
         self._model = new Model(db);
         self._emailClient = new EmailClient('BIG FAKE NAME', eventBus);
         self._bookkeeper = new BookKeeper(eventBus);
+        self._metrics = new Metrics(eventBus);
 
         //  Register event listeners
         self._eventBus.addEventListener(events.RECEIVED_EMAIL, self, self._receivedEmail);

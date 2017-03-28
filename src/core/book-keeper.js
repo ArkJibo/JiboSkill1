@@ -9,13 +9,12 @@ class BookKeeper {
     constructor(eventBus) {
         var self = this;
         self._eventBus = eventBus;
-
         /**
          * Listener for Clearing past records
          * @param param.type = event type to cleanup
          * @param param.time = delete events older than this many days
          */
-        self._eventBus.addEventListener(eventObj['CLEAR_PAST_RECORDS'], this, function(param) {
+        self._eventBus.addEventListener(eventObj.CLEAR_PAST_RECORDS, this, function(param) {
             var query = {
                 type: param.type,
                 time: {
@@ -27,7 +26,7 @@ class BookKeeper {
                 params: query,
                 _cb: param._cb
             }
-            self._eventBus.emitEvent(eventObj['DATABASE_REMOVE'], emitParams);
+            self._eventBus.emitEvent(eventObj.DATABASE_REMOVE, emitParams);
         });
 
         /**
@@ -35,7 +34,7 @@ class BookKeeper {
          * @param param.query = params for what reports to fetch
          * @param param.time = delete events older than this many days
          */
-        self._eventBus.addEventListener(eventObj['EMAIL_METRICS_REPORT'], this,
+        self._eventBus.addEventListener(eventObj.EMAIL_METRICS_REPORT, this,
             function(param) {
                 //to-do: auto formatting for different report types
                 var content = {
@@ -51,21 +50,12 @@ class BookKeeper {
                     params: param.query,
                     _cb: function(err, docs) {
                         //to-do process docs for content
-                        self._eventBus.emitEvent(eventObj['SEND_EMAIL'], content);
-                        if (err)
-                            cb(err);
+                        self._eventBus.emitEvent(eventObj.SEND_EMAIL, content);
                     }
-            }
-            self._eventBus.emitEvent(eventObj['DATABASE_FETCH'], emitParams);
-
-
-
-        });
-
-
-}
-
-
+                }
+                self._eventBus.emitEvent(eventObj.DATABASE_FETCH, emitParams);
+            });
+    }
 }
 
 module.exports = BookKeeper;
