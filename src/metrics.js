@@ -1,148 +1,126 @@
 'use strict';
 
-var Util = require('./util');
-
+var util = require('./util');
 var moment = require('moment');
+var eventObj = require('./core/event/event');
 
-var metricsEventEmitter = require('../src/core/event/event-bus.js').EventEmitter;
+class Metrics {
+    constructor(eventBus) {
+        var self = this;
+        self._eventBus = eventBus;
 
-
-var init = function(EventI) {
-
-    EventI.on('UNKNOWN_USER_INPUT', function(data, cb) {
-
-        EventI.emit('DATABASE_ADD', {
-            type: 'errorReport',
-            doc: data
-        }, function(err, docs) {
-            if (err) {
-                cb(err);
-            } else {
-                cb(docs);
-            }
-        });
-        var err;
-        cb(err, data);
-    });
-
-    EventI.on('COMMAND_REPORT_ADD', function(com, params, cb) {
-
-        var paramIndividualData = {
-            date: moment().toISOString(),
-            input: params
-        }
-
-
-        EventI.emit('DATABASE_FETCH', {
-            type: 'commandReport',
-            fetchParams: {
-                'command': com
-            }
-        }, function(err, docs) {
-            if (err) {
-                cb(err);
-            }
-            if (Object.keys(docs).length == 0) {
-
-                EventI.emit('DATABASE_ADD', {
-                    type: 'commandReport',
-                    doc: {
-                        command: com,
-                        totalUsage: 1,
-                        individualData: [paramIndividualData]
-                    }
-                }, function(err, docs) {
-                    if (err) {
-                        cb(err);
-                    } else {
-                        cb(docs);
-                    }
-                });
-            } else {
-                EventI.emit('DATABASE_UPDATE', 'commandReport', {
-                    'command': com
-                }, {
-                    $push: {
-                        'individualData': paramIndividualData
-                    }
-                }, function(err, docs) {
-                    if (err) {
-                        cb(err);
-                    } else {
-                        cb(docs);
-                    }
-                });
-            }
-            cb(err, paramIndividualData);
-        });
-
-        cb( null, paramIndividualData);
-
-    });
-
-    EventI.on('DAILY_REPORT_ADD', function(param, cb) {
-
-        var param = {
-            command: param,
-            date: moment().startOf('d').toISOString(),
-            time: moment().toISOString()
-        }
-
-    EventI.emit('DATABASE_FETCH', {
-        type: 'dailyReport',
-        fetchParams: {
-            'date': param.date
-        }
-    }, function(err, docs) {
-        if (err) {
-            cb(err);
-        }
-        if (Object.keys(docs).length == 0) {
-
-            EventI.emit('DATABASE_ADD', {
-                type: 'dailyReport',
+        self._eventBus.addEventListener(eventObj.UNKNOWN_USER_INPUT, this, function(param) {
+            var emitParams = {
+                type: 'errorReport',
+                subtype: 'default',
                 doc: {
-                    firstInteraction:  param.time,
-                    totalUsage: 1,
-                    individualData: [{
-                          command: param.command,
-                          time: param.time
-                    }]
-                }
-            }, function(err, docs) {
-                if (err) {
-                    cb(err);
-                } else {
-                    cb(docs);
-                }
-            });
-        } else {
-            EventI.emit('DATABASE_UPDATE', 'dailyReport', {
-                'command': param.command
-            }, {
-                $push: {
-                    'interactions': {
-                          command: param.command,
-                          time: param.time
+                    input: param.input,
+                    date: param.date
+                },
+                _cb: param._cb
+            }
+            self._eventBus.emitEvent(eventObj.DATABASE_ADD, emitParams);
+        });
+
+        self._eventBus.addEventListener(eventObj.COMMAND_REPORT_ADD, this, function(param) {
+            var inputIndividualData = {
+                date: moment().format('x'),
+                input: param.inputParams
+            }
+            var emitParams = {
+                type: 'commandReport',
+                fetchParams: {
+                    'command': param.command
+                },
+                _cb: function(err, docs) {
+                    if (err) {
+                        console.log(err);
+                    }
+                    if (Object.keys(docs).length == 0) {
+                        var addEmitParams = {
+                            type: 'commandReport',
+                            subtype: 'default',
+                            doc: {
+                                command: param.command,
+                                totalUsage: 1,
+                                individualData: [inputIndividualData]
+                            },
+                            _cb: param._cb
+                        }
+                        self._eventBus.emitEvent(eventObj.DATABASE_ADD, addEmitParams);
+                    } else {
+                        var updateEmitParams = {
+                            type: 'commandReport',
+                            params: {
+                                'command': param.command
+                            },
+                            updates: {
+                                $push: {
+                                    'individualData': paramIndividualData
+                                }
+                            },
+                            _cb: param._cb
+                        }
+                        self._eventBus.emitEvent(eventObj.DATABASE_UPDATE, updateEmitParams);
                     }
                 }
-            }, function(err, docs) {
-                if (err) {
-                    cb(err);
-                } else {
-                    cb(docs);
+            }
+            self._eventBus.emitEvent(eventObj.DATABASE_FETCH, emitParams);
+        });
+
+        self._eventBus.addEventListener(eventObj.DAILY_REPORT_ADD, this, function(param) {
+            var inputIndividualData = {
+                command: param.command,
+                date: moment().startOf('d').format('x'),
+                time: moment().format('x')
+            }
+
+            var emitParams = {
+                type: 'dailyReport',
+                fetchParams: {
+                    'date': inputIndividualData.date
+                },
+                _cb: function(err, docs) {
+                    if (err) {
+                        param._cb(err);
+                    }
+                    if (Object.keys(docs).length == 0) {
+                        var addEmitParams = {
+                            type: 'dailyReport',
+                            subtype: 'default',
+                            doc: {
+                                firstInteraction: param.time,
+                                totalUsage: 1,
+                                individualData: [{
+                                    command: param.command,
+                                    time: param.time
+                                }]
+                            },
+                            _cb: param._cb
+                        }
+                        self._eventBus.emitEvent(eventObj.DATABASE_ADD, addEmitParams);
+                    } else {
+                        var updateEmitParams = {
+                            type: 'dailyReport',
+                            params: {
+                                'date': inputIndividualData.date
+                            },
+                            updates: {
+                                $push: {
+                                    'interactions': {
+                                        command: param.command,
+                                        time: param.time
+                                    }
+                                }
+                            },
+                            _cb: param._cb
+                        }
+                        self._eventBus.emitEvent(eventObj.DATABASE_UPDATE, updateEmitParams);
+                    }
                 }
-            });
-        }
-        cb(err, param);
-    });
-
-    cb( null, param);
-
-});
-
-
-};
-
-
-module.exports.init = init;
+            }
+            self._eventBus.emitEvent(eventObj.DATABASE_FETCH, emitParams);
+        });
+    }
+}
+module.exports = Metrics;

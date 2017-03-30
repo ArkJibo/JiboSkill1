@@ -45,6 +45,15 @@ minCollectionKeys[util.COLLECTION_TYPE.CREDS] = {
 minCollectionKeys[util.COLLECTION_TYPE.EMAIL] = {
     default: ['fromEmail', 'fromFirstName', 'subject', 'body', 'date']
 };
+minCollectionKeys[util.COLLECTION_TYPE.COMMAND_REPORT] = {
+    default: ['command', 'totalUsage', 'individualData']
+};
+minCollectionKeys[util.COLLECTION_TYPE.DAILY_REPORT] = {
+    default: ['firstInteraction', 'totalUsage', 'individualData']
+};
+minCollectionKeys[util.COLLECTION_TYPE.ERROR_REPROT] = {
+    default: ['input', 'date']
+};
 
 var dateKeys = ['time', 'date', 'lastTaken', 'startTime', 'endTime', 'birthday', 'dateAdded', 'lastUsed'];
 var timeModifiers = {
@@ -84,6 +93,9 @@ class Model {
         self._db[util.COLLECTION_TYPE.VOICE] = new Datastore(db.voice);
         self._db[util.COLLECTION_TYPE.CREDS] = new Datastore(db.credentials);
         self._db[util.COLLECTION_TYPE.EMAIL] = new Datastore(db.emails);
+        self._db[util.COLLECTION_TYPE.COMMAND_REPORT] = new Datastore(db.commandReport);
+        self._db[util.COLLECTION_TYPE.DAILY_REPORT] = new Datastore(db.dailyReport);
+        self._db[util.COLLECTION_TYPE.ERROR_REPROT] = new Datastore(db.errorReport);
 
         Object.keys(self._db).forEach(function(col) {
             self._db[col].loadDatabase();
@@ -424,6 +436,9 @@ class Model {
             case util.COLLECTION_TYPE.ENTERTAINMENT:
             case util.COLLECTION_TYPE.VOICE:
             case util.COLLECTION_TYPE.EMAIL:
+            case util.COLLECTION_TYPE.COMMAND_REPORT:
+            case util.COLLECTION_TYPE.DAILY_REPORT:
+            case util.COLLECTION_TYPE.ERROR_REPROT:
                 verifyCB = function (err, params) {
                     if (err) {
                         cb(err);

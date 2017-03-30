@@ -373,7 +373,7 @@ class Controller {
 
         //  Do something, like record metrics
 
-        cb();
+        //cb();
     }
 
     /**

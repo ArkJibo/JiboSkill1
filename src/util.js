@@ -25,7 +25,10 @@ util.COLLECTION_TYPE = {
     VOICE: 'voice',
     CREDS: 'credentials',
     EMAIL: 'emails',
-    METRICS: 'metrics'
+    METRICS: 'metrics',
+    COMMAND_REPORT: 'commandReport',
+    DAILY_REPORT: 'dailyReport',
+    ERROR_REPROT: 'errorReport'
 };
 
 util.MEM_STIMULANT = {
