@@ -1,4 +1,4 @@
-/* global describe, it, before, beforeEach, after, afterEach */
+/* global describe, it, before, beforeEach */
 /* jshint expr: true */
 
 'use strict';

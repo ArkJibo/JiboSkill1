@@ -1,10 +1,8 @@
-/* global describe, it, before, beforeEach, after, afterEach */
+/* global describe, it, before, beforeEach, afterEach */
 /*jshint expr: true*/
 
 'use strict';
 
-var Datastore = require('nedb');
-var fs = require('fs');
 var async = require('async');
 var moment = require('moment');
 var Model = require('../../src/model');
@@ -12,7 +10,6 @@ var errors = require('../../src/errors');
 var expect = require('chai').expect;
 var config = require('config');
 var util = require('../../src/util');
-var _ = require('lodash');
 
 describe('Model', function () {
     var model;
@@ -22,7 +19,7 @@ describe('Model', function () {
 
     afterEach(function (done) {
         //  Clear contents of each temp db file
-        model._clearDatabase(function (err, results) {
+        model._clearDatabase(function (err) {
             expect(err).to.not.exist;
             done();
         });
@@ -94,7 +91,7 @@ describe('Model', function () {
                 },
                 startTime: moment(startDay).format('x')
             }
-        }], function (err, docs) {
+        }], function (err) {
             expect(err).to.not.exist;
             done();
         });
@@ -172,7 +169,7 @@ describe('Model', function () {
                 name: 'water',
                 value: 4,
                 time: moment(presentTime).add(4, 'days').format('x')
-            }], function (err, docs) {
+            }], function (err) {
                 expect(err).to.not.exist;
 
                 model.getNextMatchingEvent(util.EVENT_TYPE.APPOINTMENT, {
@@ -214,7 +211,7 @@ describe('Model', function () {
                 type: 'pipe',
                 level: 9000,
                 fire: 1
-            }], function (err, docs) {
+            }], function (err) {
                 expect(err).to.not.exist;
 
                 model.getMatchingCollectionDocs('events', {
@@ -263,7 +260,7 @@ describe('Model', function () {
             }, {
                 name: 'event4',
                 time: moment(presentTime).add(4, 'hours').format('x')
-            }], function (err, docs) {
+            }], function (err) {
                 expect(err).to.not.exist;
 
                 model.getNextReminder(function (err, doc) {
@@ -287,7 +284,7 @@ describe('Model', function () {
             }, {
                 name: 'event3',
                 time: moment(presentTime).add(1, 'days').format('x')
-            }], function (err, docs) {
+            }], function (err) {
                 expect(err).to.not.exist;
 
                 model.getNextReminder(function (err, doc) {
@@ -312,7 +309,7 @@ describe('Model', function () {
             model._db.reminderQueue.insert({
                 _id: '1234567890',
                 viewed: false
-            }, function (err, docs) {
+            }, function (err) {
                 expect(err).to.not.exist;
 
                 model.setReminderViewed('1234567890', function (err, numAffected, affectedDocs) {
@@ -328,7 +325,7 @@ describe('Model', function () {
             model._db.reminderQueue.insert({
                 _id: '1234567890',
                 viewed: false
-            }, function (err, docs) {
+            }, function (err) {
                 expect(err).to.not.exist;
 
                 model.setReminderViewed('asdfasdf', function (err, numAffected, affectedDocs) {
@@ -365,7 +362,7 @@ describe('Model', function () {
                     key1: 'b',
                     key2: 7,
                     key3: 'dummy'
-                }], function (err, docs) {
+                }], function (err) {
                     expect(err).to.not.exist;
                     done();
                 });
@@ -434,7 +431,7 @@ describe('Model', function () {
                 key: 'value'
             }, {
                 key: 'SUPER VALUE'
-            }], function (err, docs) {
+            }], function (err) {
                 expect(err).to.not.exist;
 
                 model.removeFromCollection(util.COLLECTION_TYPE.EVENTS, {
@@ -456,7 +453,7 @@ describe('Model', function () {
                 key: 'value'
             }, {
                 key: 'SUPER VALUE'
-            }], function (err, docs) {
+            }], function (err) {
                 expect(err).to.not.exist;
 
                 model.removeFromCollection(util.COLLECTION_TYPE.EVENTS, {}, function (err, numRemoved) {
@@ -531,7 +528,7 @@ describe('Model', function () {
             //  Manually insert an event
             model._db.events.insert({
                 _id: 'alksdjhfi3j928htger'
-            }, function (err, docs) {
+            }, function (err) {
                 expect(err).to.not.exist;
 
                 model.addNewCollectionDoc(util.COLLECTION_TYPE.REMINDER_QUEUE, 'default', {
@@ -540,7 +537,7 @@ describe('Model', function () {
                         _id: 'alksdjhfi3j928htger'
                     },
                     time: moment(presentTime).format('x')
-                }, function (err, doc) {
+                }, function (err) {
                     expect(err).to.not.exist;
                     done();
                 });
@@ -561,7 +558,7 @@ describe('Model', function () {
             //  Manually insert an event
             model._db.events.insert({
                 _id: 'alksdjhfi3j928htger'
-            }, function (err, docs) {
+            }, function (err) {
                 expect(err).to.not.exist;
 
                 model.addNewCollectionDoc(util.COLLECTION_TYPE.REMINDER_QUEUE, 'default', {
@@ -583,20 +580,20 @@ describe('Model', function () {
                 type: 'favorite',
                 subtype: 'game',
                 value: 'hopscotch'
-            }, function (err, doc) {
+            }, function (err) {
                 expect(err).to.not.exist;
                 done();
             });
         });
 
         it('should add new person', function (done) {
-            model.addNewCollectionDoc(util.COLLECTION_TYPE.PEOPLE,'default',  {
+            model.addNewCollectionDoc(util.COLLECTION_TYPE.PEOPLE,'default', {
                 first: 'Eric',
                 last: 'Dong',
                 relationship: 'bff forever',
                 closeness: 10,
                 birthday: moment(presentTime).format('x')
-            }, function (err, doc) {
+            }, function (err) {
                 expect(err).to.not.exist;
                 done();
             });
@@ -608,7 +605,7 @@ describe('Model', function () {
                 occasion: 'wedding',
                 file: 'media/music/banana.mp3',
                 timesViewed: 0
-            }, function (err, doc) {
+            }, function (err) {
                 expect(err).to.not.exist;
                 done();
             });
@@ -620,7 +617,7 @@ describe('Model', function () {
                 dateAdded: moment(presentTime).format('x'),
                 lastUsed: moment(presentTime).format('x'),
                 rating: 2
-            }, function (err, doc) {
+            }, function (err) {
                 expect(err).to.not.exist;
                 done();
             });
@@ -631,7 +628,7 @@ describe('Model', function () {
                 type: 'greeting',
                 line: 'Greetings adventurer!',
                 dateAdded: moment(presentTime).format('x')
-            }, function (err, doc) {
+            }, function (err) {
                 expect(err).to.not.exist;
                 done();
             });
@@ -823,7 +820,7 @@ describe('Model', function () {
             //  Manually insert a doc to test on
             model._db.events.insert({
                 type: 'hype'
-            }, function (err, docs) {
+            }, function (err) {
                 expect(err).to.not.exist;
 
                 model._getFromCollection('events', {
@@ -843,7 +840,7 @@ describe('Model', function () {
             }, {
                 type: 'hype',
                 level: 9000
-            }], function (err, docs) {
+            }], function (err) {
                 expect(err).to.not.exist;
 
                 model._getFromCollection('events', {
@@ -865,7 +862,7 @@ describe('Model', function () {
             }, {
                 type: 'hype',
                 level: 9000
-            }], function (err, docs) {
+            }], function (err) {
                 expect(err).to.not.exist;
 
                 model._removeFromCollection('events', {
@@ -886,7 +883,7 @@ describe('Model', function () {
             //  Manually insert doc to update
             model._db.events.insert({
                 type: 'hype'
-            }, function (err, docs) {
+            }, function (err) {
                 expect(err).to.not.exist;
 
                 model._updateInCollection('events', {
@@ -914,7 +911,7 @@ describe('Model', function () {
                 type: 'hype',
                 level: 8999,
                 wat: 'wat'
-            }, function (err, docs) {
+            }, function (err) {
                 expect(err).to.not.exist;
 
                 model._updateInCollection('events', {
@@ -958,7 +955,7 @@ describe('Model', function () {
                 flowers: ['phone', 'mouse', 42]
             }, {
                 lonely: 'object'
-            }], function (err, docs) {
+            }], function (err) {
                 expect(err).to.not.exist;
 
                 model._clearCollection('events', function (err, numRemoved) {

@@ -1,4 +1,4 @@
-/*global describe, it, before, beforeEach, after, afterEach*/
+/*global describe, it, before, beforeEach, afterEach*/
 /*jshint expr: true*/
 
 'use strict';
@@ -32,7 +32,7 @@ var addCalendarEvents = function (eventBus, cb) {
         });
     });
 
-    async.parallel(funcs, function (err, docs) {
+    async.parallel(funcs, function (err) {
         expect(err).to.not.exist;
         cb();
     });
@@ -47,7 +47,7 @@ describe('Scenario Based Functional Tests', function () {
 
     afterEach(function (done) {
         //  Clear contents of each temp db file
-        controller._model._clearDatabase(function (err, results) {
+        controller._model._clearDatabase(function (err) {
             expect(err).to.not.exist;
             done();
         });
@@ -169,7 +169,7 @@ describe('Scenario Based Functional Tests', function () {
                                         }
                                     }
                                 });
-                            }, function (err) {
+                            }, function () {
                                 //  No more reminders
                                 done();
                             });
