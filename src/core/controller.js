@@ -3,6 +3,7 @@
 var Model = require('../model');
 var EmailClient = require('./email-client');
 var BookKeeper = require('./book-keeper');
+var Metrics = require('../metrics');
 var events = require('./event/event');
 var errors = require('../errors');
 var util = require('../util');
@@ -25,7 +26,8 @@ class Controller {
         self._eventBus = eventBus;
         self._model = new Model(db);
         self._emailClient = new EmailClient('BIG FAKE NAME', eventBus);
-        self._bookkeeper = new BookKeeper();
+        self._bookkeeper = new BookKeeper(eventBus);
+        self._metrics = new Metrics(eventBus);
 
         //  Register event listeners
         self._eventBus.addEventListener(events.RECEIVED_EMAIL, self, self._receivedEmail);
@@ -371,7 +373,7 @@ class Controller {
 
         //  Do something, like record metrics
 
-        cb();
+        //cb();
     }
 
     /**
@@ -414,7 +416,6 @@ class Controller {
      */
     _removeFromDatabase (params, cb) {
         var self = this;
-
         self._model.removeFromCollection(params.type, params.params, cb);
     }
 }
