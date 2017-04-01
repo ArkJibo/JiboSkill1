@@ -2,7 +2,6 @@
 
 var errors = require('../../errors');
 var EventEmitter = require('events');
-var _ = require('lodash');
 
 class EventBus extends EventEmitter {
 

@@ -1,4 +1,4 @@
-/* global describe, it, before, beforeEach, after, afterEach */
+/* global describe, after */
 /*jshint expr: true*/
 
 'use strict';
@@ -14,7 +14,7 @@ var cleanup = function (cb) {
     var funcs = [];
     var files = config.get('model.db');
     Object.keys(files).forEach(function (key) {
-        funcs.push(function(cb) {
+        funcs.push(function (cb) {
             fs.unlink(files[key], function (err) {
                 expect(err).to.not.exist;
                 cb();

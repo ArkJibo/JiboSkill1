@@ -1,5 +1,3 @@
-/* global describe, it, before, beforeEach, after, afterEach */
-/*jshint expr: true*/
 
 'use strict';
 
@@ -12,9 +10,6 @@ var EventBus = require('../../src/core/event/event-bus');
 var events = require('../../src/core/event/event');
 var util = require('../../src/util');
 var errors = require('../../src/errors');
-var fs = require('fs');
-var async = require('async');
-var Datastore = require('nedb');
 var expect = require('chai').expect;
 var moment = require('moment');
 
@@ -28,21 +23,9 @@ describe('Controller', function () {
         controller = new Controller(eventBus);
     });
 
-    var tempFiles = {
-        'events': './db/test-events.db',
-        'reminderQueue': './db/test-reminderQueue.db',
-        'inventory': './db/test-inventory.db',
-        'patient': './db/test-patient.db',
-        'people': './db/test-people.db',
-        'media': './db/test-media.db',
-        'entertainment': './db/test-entertainment.db',
-        'voice': './db/test-voice.db',
-        'credentials': './db/test-credentials.db'
-    };
-
     afterEach(function (done) {
         //  Clear contents of each temp db file
-        controller._model._clearDatabase(function (err, results) {
+        controller._model._clearDatabase(function (err) {
             expect(err).to.not.exist;
             done();
         });
@@ -57,12 +40,12 @@ describe('Controller', function () {
             }, {
                 type: 'update-password',
                 password: 'buntimes'
-            }], function (err, docs) {
+            }], function (err) {
                 expect(err).to.not.exist;
 
                 controller._model._db.events.insert({
                     deez: 'nuts'
-                }, function (err, docs) {
+                }, function (err) {
                     expect(err).to.not.exist;
                     done();
                 });
@@ -214,7 +197,7 @@ describe('Controller', function () {
             }, {
                 type: 'video',
                 timesViewed: 2
-            }], function (err, docs) {
+            }], function (err) {
                 expect(err).to.not.exist;
 
                 eventBus.emitEvent(events.STIMULATE_MEMORY, {
@@ -260,7 +243,7 @@ describe('Controller', function () {
                 relationship: 'sister-in-law',
                 birthday: presentTime.format('x'),
                 closeness: 9
-            }], function (err, docs) {
+            }], function (err) {
                 expect(err).to.not.exist;
 
                 eventBus.emitEvent(events.STIMULATE_MEMORY, {
@@ -304,7 +287,7 @@ describe('Controller', function () {
                 relationship: 'sister-in-law',
                 birthday: presentTime.format('x'),
                 closeness: 2
-            }], function (err, docs) {
+            }], function (err) {
                 expect(err).to.not.exist;
 
                 eventBus.emitEvent(events.STIMULATE_MEMORY, {

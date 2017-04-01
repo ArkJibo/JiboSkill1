@@ -8,7 +8,6 @@ var util = require('./util');
 var errors = require('./errors');
 var async = require('async');
 var _ = require('lodash');
-var crypto = require('crypto');
 
 var minRepeatInfoKeys = ['interval', 'endTime'];
 var minReminderInfoKeys = ['numReminders', 'interval', 'startTime'];
@@ -85,7 +84,7 @@ class Model {
         self._db[util.COLLECTION_TYPE.CREDS] = new Datastore(db.credentials);
         self._db[util.COLLECTION_TYPE.EMAIL] = new Datastore(db.emails);
 
-        Object.keys(self._db).forEach(function(col) {
+        Object.keys(self._db).forEach(function (col) {
             self._db[col].loadDatabase();
         });
     }
@@ -167,7 +166,7 @@ class Model {
         //  First remove any viewed reminders
         self._removeFromCollection(util.COLLECTION_TYPE.REMINDER_QUEUE, {
             viewed: true
-        }, removeOptions, function (err, numRemoved) {
+        }, removeOptions, function (err) {
             if (err) {
                 cb(err);
             } else {
@@ -228,7 +227,7 @@ class Model {
         self._getFromCollectionSorted(util.COLLECTION_TYPE.EVENTS, params, {
             time: 1
         }, function (err, docs) {
-                cb(err, docs ? docs[0] : null);
+            cb(err, docs ? docs[0] : null);
         });
     }
 
@@ -513,8 +512,6 @@ class Model {
      * @param keys Keys to look for
      */
     _checkForKeys (obj, keys) {
-        var self = this;
-
         if (!obj || !keys) {
             return false;
         }

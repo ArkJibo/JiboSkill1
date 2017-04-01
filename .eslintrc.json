@@ -1,0 +1,27 @@
+{
+    "env": {
+        "es6": true,
+        "node": true,
+        "mocha": true
+    },
+    "extends": "eslint:recommended",
+    "rules": {
+        "indent":                       ["error", 4, {"SwitchCase": 1}],
+        "curly":                        ["error", "all"],
+        "linebreak-style":              ["error", "windows"],
+        "quotes":                       ["error", "single"],
+        "semi":                         ["error", "always"],
+        "no-multi-spaces":              ["error"],
+        "no-console":                   0,
+        "space-before-blocks":          ["error", "always"],
+        "no-multiple-empty-lines":      ["error"],
+        "brace-style":                  ["error", "1tbs"],
+        "max-len":                      ["error", {"code": 120}],
+        "space-before-function-paren":  ["error", "always"],
+        "eqeqeq":                       ["error", "always"],
+        "no-use-before-define":         ["error"],
+        "no-undef":                     ["error"],
+        "no-unused-vars":               ["error"],
+        "strict":                       ["error"]
+    }
+}
