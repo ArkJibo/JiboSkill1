@@ -11,6 +11,9 @@ class TestClient {
       var self = this;
       self._testResult = Q.defer();
       self._testName = Q.defer();
+      self.total = 0;
+      self.pass = 0;
+
     }
 
     resetPromise(){
@@ -31,6 +34,8 @@ class TestClient {
 
     runTest(asrResult, speakerIds){
       var self = this;
+      this.total = 0;
+      this.pass = 0;
       var result = [];
       var status = undefined;
 
@@ -75,7 +80,6 @@ class TestClient {
             });
 
 
-
             mocha.run()
             .on('test', function(test) {
 
@@ -90,7 +94,8 @@ class TestClient {
                 "error": null
               };
               result.push(testObj);
-
+              this.total += 1;
+              this.pass += 1;
             })
             .on('fail', function(test, err) {
               var testObj = {
@@ -99,7 +104,7 @@ class TestClient {
                 "error": err
               };
               result.push(testObj);
-
+              this.total += 1;
             })
             .on('end', function() {
 
