@@ -2,17 +2,16 @@
     "1": {
         "id": 1,
         "class": "Sequence",
-        "name": "",
+        "name": "Loops forever",
+        "options": {},
         "asset-pack": "core",
         "children": [
             "29c07075-d765-4f2b-af75-3c9532a2e306",
-            "8ee52483-66b8-41a1-b1e2-8afb90a53aab",
-            "6cf1f411-f86d-48d2-b898-72a997ac5326"
+            "581fef1e-c925-4994-ad97-6e643c869e1c"
         ],
         "decorators": [
             "c5468334-737e-4b4b-aa09-5fc1c6b7f477"
-        ],
-        "options": {}
+        ]
     },
     "meta": {
         "version": 1
@@ -20,7 +19,7 @@
     "29c07075-d765-4f2b-af75-3c9532a2e306": {
         "id": "29c07075-d765-4f2b-af75-3c9532a2e306",
         "class": "Subtree",
-        "name": "",
+        "name": "Idle state",
         "options": {
             "behaviorPath": "idle.bt",
             "getNotepad": [
@@ -36,42 +35,159 @@
         "asset-pack": "core",
         "parent": 1,
         "decorators": [
-            "fa6e0483-9d2a-46c5-a5fc-86d61bc52377"
+            "cbab43fa-1330-4a51-953c-cdd777c72223",
+            "14bb4af3-b897-45ba-96f0-2476cd1f1de7"
         ]
     },
-    "fa6e0483-9d2a-46c5-a5fc-86d61bc52377": {
-        "id": "fa6e0483-9d2a-46c5-a5fc-86d61bc52377",
+    "c5468334-737e-4b4b-aa09-5fc1c6b7f477": {
+        "id": "c5468334-737e-4b4b-aa09-5fc1c6b7f477",
+        "class": "WhileCondition",
+        "name": "",
+        "options": {
+            "init": [
+                "() => {",
+                "}"
+            ],
+            "conditional": [
+                "() => {",
+                "    return true;",
+                "}"
+            ]
+        },
+        "asset-pack": "core"
+    },
+    "14bb4af3-b897-45ba-96f0-2476cd1f1de7": {
+        "id": "14bb4af3-b897-45ba-96f0-2476cd1f1de7",
         "class": "SucceedOnEmbedded",
         "name": "",
         "options": {
             "rule": "hey_jibo",
             "onResult": [
                 "(listener) => {",
-                "\tlistener.on('hey-jibo', function (asrResult, speakerIds) {",
-                "",
+                "\tlistener.on('hey-jibo', function(asrResult, speakerIds) {",
+                "\t\tnotepad.idleSwitch = {",
+                "\t        type: 'user',",
+                "\t        params: asrResult",
+                "\t    };",
                 "\t});",
                 "}"
             ]
         },
         "asset-pack": "core"
     },
-    "8ee52483-66b8-41a1-b1e2-8afb90a53aab": {
-        "id": "8ee52483-66b8-41a1-b1e2-8afb90a53aab",
+    "cbab43fa-1330-4a51-953c-cdd777c72223": {
+        "id": "cbab43fa-1330-4a51-953c-cdd777c72223",
+        "class": "SucceedOnEvent",
+        "name": "",
+        "options": {
+            "eventName": "INTERRUPT_IDLE",
+            "onEvent": [
+                "(params) => {",
+                "    notepad.idleSwitch = {",
+                "        type: 'event',",
+                "        params: params",
+                "    };",
+                "}"
+            ]
+        },
+        "asset-pack": "core"
+    },
+    "581fef1e-c925-4994-ad97-6e643c869e1c": {
+        "id": "581fef1e-c925-4994-ad97-6e643c869e1c",
+        "class": "Switch",
+        "name": "idleSwitch",
+        "options": {},
+        "asset-pack": "core",
+        "parent": 1,
+        "decorators": [],
+        "children": [
+            "d501889a-3359-4553-9daa-193ba3af1cf2",
+            "a6812066-ee5f-4025-88be-5a6b97320e1b"
+        ]
+    },
+    "a6812066-ee5f-4025-88be-5a6b97320e1b": {
+        "id": "a6812066-ee5f-4025-88be-5a6b97320e1b",
+        "class": "Sequence",
+        "name": "Internal event interrupt",
+        "options": {},
+        "asset-pack": "core",
+        "parent": "581fef1e-c925-4994-ad97-6e643c869e1c",
+        "decorators": [
+            "a4949bdb-d47a-4d09-b200-9d51c3076418"
+        ],
+        "children": [
+            "a4377358-977e-44ae-b995-1336b127135f"
+        ]
+    },
+    "d501889a-3359-4553-9daa-193ba3af1cf2": {
+        "id": "d501889a-3359-4553-9daa-193ba3af1cf2",
+        "class": "Sequence",
+        "name": "User interrupt",
+        "options": {},
+        "asset-pack": "core",
+        "parent": "581fef1e-c925-4994-ad97-6e643c869e1c",
+        "decorators": [
+            "b1eb8fd5-8108-430c-ba9c-51faf0ad5b96"
+        ],
+        "children": [
+            "6f5ccb04-dce1-4cbb-ae39-94b3dea514d0",
+            "1b613220-b75d-471d-958a-5738daee6227",
+            "0fd361b1-fddc-4a42-83cd-4a6149a0e259"
+        ]
+    },
+    "b1eb8fd5-8108-430c-ba9c-51faf0ad5b96": {
+        "id": "b1eb8fd5-8108-430c-ba9c-51faf0ad5b96",
+        "class": "Case",
+        "name": "",
+        "options": {
+            "conditional": [
+                "() => {",
+                "    return notepad.idleSwitch.type === 'user';",
+                "}"
+            ]
+        },
+        "asset-pack": "core"
+    },
+    "a4949bdb-d47a-4d09-b200-9d51c3076418": {
+        "id": "a4949bdb-d47a-4d09-b200-9d51c3076418",
+        "class": "Case",
+        "name": "",
+        "options": {
+            "conditional": [
+                "() => {",
+                "    return notepad.idleSwitch.type === 'event';",
+                "}"
+            ]
+        },
+        "asset-pack": "core"
+    },
+    "6f5ccb04-dce1-4cbb-ae39-94b3dea514d0": {
+        "id": "6f5ccb04-dce1-4cbb-ae39-94b3dea514d0",
         "class": "TextToSpeech",
         "name": "",
         "options": {
-            "words": "Hello",
+            "words": "Hello!",
             "onWord": [
                 "(word) => {",
                 "}"
             ]
         },
         "asset-pack": "core",
-        "parent": 1,
-        "decorators": []
+        "parent": "d501889a-3359-4553-9daa-193ba3af1cf2"
     },
-    "6cf1f411-f86d-48d2-b898-72a997ac5326": {
-        "id": "6cf1f411-f86d-48d2-b898-72a997ac5326",
+    "a4377358-977e-44ae-b995-1336b127135f": {
+        "id": "a4377358-977e-44ae-b995-1336b127135f",
+        "class": "Switch",
+        "name": "idleSwitch.params",
+        "options": {},
+        "asset-pack": "core",
+        "parent": "a6812066-ee5f-4025-88be-5a6b97320e1b",
+        "children": [
+            "1c8d472a-499c-444a-9d4a-dc38e73505b4"
+        ]
+    },
+    "1b613220-b75d-471d-958a-5738daee6227": {
+        "id": "1b613220-b75d-471d-958a-5738daee6227",
         "class": "Listen",
         "name": "",
         "options": {
@@ -89,28 +205,134 @@
             "rule": "main.rule",
             "onResult": [
                 "(listener) => {",
-                "    listener.on('cloud', function (asrResult, speakerIds) {",
-                "        var mainListener = require('../listeners/main');",
-                "        mainListener(asrResult, speakerIds);",
+                "    listener.on('cloud', function(asrResult, speakerIds) {",
+                "        var MainListener = require('../listeners/main');",
+                "        var main = new MainListener();",
+                "        main.process(asrResult.NLParse, speakerIds);",
+                "        ",
+                "        //  Set notepad value for switch",
+                "        notepad.userCommandSwitch = {",
+                "            subtree: asrResult.NLParse.action",
+                "        };",
                 "    });",
                 "}"
             ]
         },
         "asset-pack": "core",
-        "parent": 1
+        "parent": "d501889a-3359-4553-9daa-193ba3af1cf2"
     },
-    "c5468334-737e-4b4b-aa09-5fc1c6b7f477": {
-        "id": "c5468334-737e-4b4b-aa09-5fc1c6b7f477",
-        "class": "WhileCondition",
-        "name": "",
+    "0fd361b1-fddc-4a42-83cd-4a6149a0e259": {
+        "id": "0fd361b1-fddc-4a42-83cd-4a6149a0e259",
+        "class": "Switch",
+        "name": "userCommandSwitch",
+        "options": {},
+        "asset-pack": "core",
+        "parent": "d501889a-3359-4553-9daa-193ba3af1cf2",
+        "children": [
+            "0f070ddd-4ccd-4672-af01-6c800a351f31",
+            "bba0c15f-4ab4-4852-bee7-5c231b7422d4"
+        ]
+    },
+    "0f070ddd-4ccd-4672-af01-6c800a351f31": {
+        "id": "0f070ddd-4ccd-4672-af01-6c800a351f31",
+        "class": "Subtree",
+        "name": "Testing subtree",
         "options": {
-            "init": [
+            "behaviorPath": "testing.bt",
+            "getNotepad": [
                 "() => {",
+                "    return {};",
                 "}"
             ],
+            "onResult": [
+                "(treeResult) => {",
+                "}"
+            ]
+        },
+        "asset-pack": "core",
+        "parent": "0fd361b1-fddc-4a42-83cd-4a6149a0e259",
+        "decorators": [
+            "0429020a-1455-43ea-9e1c-2166ad0f0a8e"
+        ]
+    },
+    "0429020a-1455-43ea-9e1c-2166ad0f0a8e": {
+        "id": "0429020a-1455-43ea-9e1c-2166ad0f0a8e",
+        "class": "Case",
+        "name": "",
+        "options": {
             "conditional": [
                 "() => {",
-                "    return true;",
+                "    return notepad.userCommandSwitch.subtree === 'testing';",
+                "}"
+            ]
+        },
+        "asset-pack": "core"
+    },
+    "bba0c15f-4ab4-4852-bee7-5c231b7422d4": {
+        "id": "bba0c15f-4ab4-4852-bee7-5c231b7422d4",
+        "class": "Subtree",
+        "name": "Calendar subtree",
+        "options": {
+            "behaviorPath": "calendar.bt",
+            "getNotepad": [
+                "() => {",
+                "    return {};",
+                "}"
+            ],
+            "onResult": [
+                "(treeResult) => {",
+                "}"
+            ]
+        },
+        "asset-pack": "core",
+        "parent": "0fd361b1-fddc-4a42-83cd-4a6149a0e259",
+        "decorators": [
+            "43e5e8e0-b0e1-48b6-bf37-c00b287fb000"
+        ]
+    },
+    "43e5e8e0-b0e1-48b6-bf37-c00b287fb000": {
+        "id": "43e5e8e0-b0e1-48b6-bf37-c00b287fb000",
+        "class": "Case",
+        "name": "",
+        "options": {
+            "conditional": [
+                "() => {",
+                "    return notepad.userCommandSwitch.subtree === 'calendar';",
+                "}"
+            ]
+        },
+        "asset-pack": "core"
+    },
+    "1c8d472a-499c-444a-9d4a-dc38e73505b4": {
+        "id": "1c8d472a-499c-444a-9d4a-dc38e73505b4",
+        "class": "Subtree",
+        "name": "Reminder subtree",
+        "options": {
+            "behaviorPath": "reminder.bt",
+            "getNotepad": [
+                "() => {",
+                "    return {};",
+                "}"
+            ],
+            "onResult": [
+                "(treeResult) => {",
+                "}"
+            ]
+        },
+        "asset-pack": "core",
+        "parent": "a4377358-977e-44ae-b995-1336b127135f",
+        "decorators": [
+            "aaf59403-a1dc-4d9e-bf93-d2102367d4b4"
+        ]
+    },
+    "aaf59403-a1dc-4d9e-bf93-d2102367d4b4": {
+        "id": "aaf59403-a1dc-4d9e-bf93-d2102367d4b4",
+        "class": "Case",
+        "name": "",
+        "options": {
+            "conditional": [
+                "() => {",
+                "    return notepad.idleSwitch.params.type === 'reminder';",
                 "}"
             ]
         },

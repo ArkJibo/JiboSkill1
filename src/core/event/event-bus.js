@@ -5,8 +5,12 @@ var EventEmitter = require('events');
 
 class EventBus extends EventEmitter {
 
-    constructor () {
+    /*
+     * @param jiboEmitter For sending events up to the global Jibo emitter
+     */
+    constructor (jiboEmitter) {
         super();
+        this._jiboEmitter = jiboEmitter;
     }
 
     /**
@@ -84,16 +88,20 @@ class EventBus extends EventEmitter {
      * Fires the event with specified params
      * @param event String value of the event
      * @param params JS object with event params
-     * @throws exception on bad args
      */
     emitEvent (event, params) {
         var self = this;
-
-        if (!event || typeof event !== 'string') {
-            throw errors.BAD_EVENT;
-        }
-
         self.emit(event, params, params._cb);
+    }
+
+    /**
+     * Fires the event on the Jibo event emitter
+     * @param event String value of the event
+     * @param params JS object with event params
+     */
+    emitJiboEvent (event, params) {
+        var self = this;
+        self._jiboEmitter.emit(event, params);
     }
 
     /**
