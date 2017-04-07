@@ -35,7 +35,7 @@ module.exports = function (grunt) {
         }
     });
 
-    grunt.registerTask('build', ['test', 'env:build', 'shell']);
+    grunt.registerTask('build', ['test', 'env:build']);
     grunt.registerTask('test', ['env:dev', 'lint', 'mochaTest']);
     grunt.registerTask('lint', ['eslint']);
 };

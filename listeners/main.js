@@ -3,6 +3,7 @@
 var Mocha = require('mocha');
 var fs = require('fs');
 var path = require('path');
+var moment = require('moment');
 
 class MainListener {
 
@@ -14,7 +15,10 @@ class MainListener {
             case 'testing':
                 //  Call listener for handling testing
 
-            //  Future cases/listeners go here
+                break;
+
+            case 'schedule':
+                console.log('IT CALENDAR');
         }
     }
 }

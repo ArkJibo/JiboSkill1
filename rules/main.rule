@@ -1,7 +1,10 @@
 TopRule = $* (
-    $runTestsRule { action = 'testing' } { type = runTestsRule._type }
+    $runTestsRules { action = 'testing' } { type = runTestsRules._type } |
+    $calendarRules { action = 'schedule' } {day = calendarRules._day }
 );
 
-runTestsRule = run $testType { _type = testType._type } [test?s];
-
+runTestsRules = run $testType { _type = testType._type } [test?s];
 testType @= ($w) { _type = _parsed };
+
+calendarRules = $* my (schedule|calendar) for $calendarDay { _day = calendarDay._day };
+calendarDay @= (*$w) { _day = _parsed };

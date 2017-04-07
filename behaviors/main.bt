@@ -271,7 +271,7 @@
     "bba0c15f-4ab4-4852-bee7-5c231b7422d4": {
         "id": "bba0c15f-4ab4-4852-bee7-5c231b7422d4",
         "class": "Subtree",
-        "name": "Calendar subtree",
+        "name": "Schedule subtree",
         "options": {
             "behaviorPath": "calendar.bt",
             "getNotepad": [
