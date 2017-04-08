@@ -1,10 +1,6 @@
-/* global describe, after */
-/*jshint expr: true*/
-
 'use strict';
 
 var fs = require('fs');
-var expect = require('chai').expect;
 var path = require('path');
 var config = require('config');
 var async = require('async');
@@ -15,8 +11,7 @@ var cleanup = function (cb) {
     var files = config.get('model.db');
     Object.keys(files).forEach(function (key) {
         funcs.push(function (cb) {
-            fs.unlink(files[key], function (err) {
-                expect(err).to.not.exist;
+            fs.unlink(files[key], function () {
                 cb();
             });
         });

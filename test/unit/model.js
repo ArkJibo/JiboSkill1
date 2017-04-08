@@ -1,6 +1,3 @@
-/* global describe, it, before, beforeEach, afterEach */
-/*jshint expr: true*/
-
 'use strict';
 
 var async = require('async');

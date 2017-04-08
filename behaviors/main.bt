@@ -65,10 +65,13 @@
             "onResult": [
                 "(listener) => {",
                 "\tlistener.on('hey-jibo', function(asrResult, speakerIds) {",
-                "\t\tnotepad.idleSwitch = {",
-                "\t        type: 'user',",
-                "\t        params: asrResult",
-                "\t    };",
+                "\t\tnotepad.addSwitchCondition('idleSwitch', 'user');",
+                "\t    notepad.addItem({",
+                "\t        name: 'voice-command',",
+                "\t        item: asrResult,",
+                "\t        overwrite: true,",
+                "\t        permanent: false",
+                "\t    });",
                 "\t});",
                 "}"
             ]
@@ -83,10 +86,13 @@
             "eventName": "INTERRUPT_IDLE",
             "onEvent": [
                 "(params) => {",
-                "    notepad.idleSwitch = {",
-                "        type: 'event',",
-                "        params: params",
-                "    };",
+                "    notepad.addSwitchCondition('idleSwitch', 'event');",
+                "    notepad.addItem({",
+                "        name: 'voiceCommand',",
+                "        item: params,",
+                "        overwrite: true,",
+                "        permanent: false",
+                "    });",
                 "}"
             ]
         },
@@ -142,7 +148,7 @@
         "options": {
             "conditional": [
                 "() => {",
-                "    return notepad.idleSwitch.type === 'user';",
+                "    return notepad.getSwitchCondition('idleSwitch') === 'user';",
                 "}"
             ]
         },
@@ -155,7 +161,7 @@
         "options": {
             "conditional": [
                 "() => {",
-                "    return notepad.idleSwitch.type === 'event';",
+                "    return notepad.getSwitchCondition('idleSwitch') === 'event';",
                 "}"
             ]
         },
@@ -193,7 +199,7 @@
         "options": {
             "getOptions": [
                 "() => {",
-                "    let options = {",
+                "    var options = {",
                 "        heyJibo: false,",
                 "        detectEnd: false,",
                 "        incremental: false,",
@@ -207,13 +213,11 @@
                 "(listener) => {",
                 "    listener.on('cloud', function(asrResult, speakerIds) {",
                 "        var MainListener = require('../listeners/main');",
-                "        var main = new MainListener();",
+                "        var main = new MainListener(notepad);",
                 "        main.process(asrResult.NLParse, speakerIds);",
                 "        ",
                 "        //  Set notepad value for switch",
-                "        notepad.userCommandSwitch = {",
-                "            subtree: asrResult.NLParse.action",
-                "        };",
+                "        notepad.addSwitchCondition('userCommandSwitch', asrResult.NLParse.action);",
                 "    });",
                 "}"
             ]
@@ -262,7 +266,7 @@
         "options": {
             "conditional": [
                 "() => {",
-                "    return notepad.userCommandSwitch.subtree === 'testing';",
+                "    return notepad.getSwitchCondition('userCommandSwitch') === 'testing';",
                 "}"
             ]
         },
@@ -273,7 +277,7 @@
         "class": "Subtree",
         "name": "Schedule subtree",
         "options": {
-            "behaviorPath": "calendar.bt",
+            "behaviorPath": "schedule.bt",
             "getNotepad": [
                 "() => {",
                 "    return {};",
@@ -297,7 +301,7 @@
         "options": {
             "conditional": [
                 "() => {",
-                "    return notepad.userCommandSwitch.subtree === 'calendar';",
+                "    return notepad.getSwitchCondition('userCommandSwitch') === 'schedule';",
                 "}"
             ]
         },
@@ -332,7 +336,7 @@
         "options": {
             "conditional": [
                 "() => {",
-                "    return notepad.idleSwitch.params.type === 'reminder';",
+                "    return notepad.getItem('voiceCommand').type === 'reminder';",
                 "}"
             ]
         },

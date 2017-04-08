@@ -5,18 +5,18 @@
         "name": "",
         "options": {},
         "children": [
-            "b2c5fff2-01d1-4756-8746-46a4e976b9a8"
+            "d53b3c2b-1bad-4b89-9007-86d062ee7a30"
         ]
     },
     "meta": {
         "version": 1
     },
-    "b2c5fff2-01d1-4756-8746-46a4e976b9a8": {
-        "id": "b2c5fff2-01d1-4756-8746-46a4e976b9a8",
+    "d53b3c2b-1bad-4b89-9007-86d062ee7a30": {
+        "id": "d53b3c2b-1bad-4b89-9007-86d062ee7a30",
         "class": "TextToSpeech",
         "name": "",
         "options": {
-            "words": "Doing cool calendar stuff!",
+            "words": "Doing cool schedule stuff!",
             "onWord": [
                 "(word) => {",
                 "}"

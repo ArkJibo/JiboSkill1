@@ -1,6 +1,3 @@
-/* global describe, it, before, beforeEach */
-/* jshint expr: true */
-
 'use strict';
 
 var expect = require('chai').expect;
@@ -167,16 +164,6 @@ describe('EventBus', function () {
 
             eventBus.on('event', cb);
             eventBus.emitEvent('event', params);
-        });
-
-        it('should fail for bad args', function (done) {
-            try {
-                eventBus.emitEvent(1);
-                done('Should hit exception');
-            } catch (e) {
-                expect(e).to.equal(errors.BAD_EVENT);
-                done();
-            }
         });
     });
 

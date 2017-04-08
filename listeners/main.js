@@ -1,15 +1,18 @@
 'use strict';
 
-var Mocha = require('mocha');
-var fs = require('fs');
-var path = require('path');
-var moment = require('moment');
-
 class MainListener {
 
-    constructor () {}
+    constructor (notepad) {
+        var self = this;
+        self.notepad = notepad;
+    }
 
-    process (params, speakerIds) {
+    /**
+     * @param params Contains the result of the voice interpretation
+     */
+    process (params) {
+        var self = this;
+
         //  Get the variables set by main.rule
         switch (params.action) {
             case 'testing':
@@ -18,7 +21,10 @@ class MainListener {
                 break;
 
             case 'schedule':
-                console.log('IT CALENDAR');
+                var ScheduleListener = require('./schedule');
+                var scheduleListener = new ScheduleListener(self.notepad);
+                scheduleListener.process(params.day);
+                break;
         }
     }
 }
