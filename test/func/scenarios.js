@@ -1,6 +1,3 @@
-/*global describe, it, before, beforeEach, afterEach*/
-/*jshint expr: true*/
-
 'use strict';
 
 var proxyquire = require('proxyquire');
@@ -187,11 +184,11 @@ describe('Scenario Based Functional Tests', function () {
 
         it('should get correct schedule for today', function (done) {
             eventBus.emitEvent(events.FETCH_SCHEDULE, {
-                day: moment(),
+                date: moment(),
                 _cb: function (err, docs) {
                     expect(err).to.not.exist;
                     expect(docs.length).to.equal(4);
-                    expect(docs[0].type).to.equal('eating');
+                    expect(docs[0].type).to.equal('meal');
                     expect(docs[1].type).to.equal('appointment');
                     expect(docs[2].type).to.equal('exercise');
                     expect(docs[3].type).to.equal('medication');
@@ -202,12 +199,12 @@ describe('Scenario Based Functional Tests', function () {
 
         it('should get correct schedule for future', function (done) {
             eventBus.emitEvent(events.FETCH_SCHEDULE, {
-                day: moment().add(2, 'days'),
+                date: moment().add(2, 'days'),
                 _cb: function (err, docs) {
                     expect(err).to.not.exist;
                     expect(docs.length).to.equal(5);
                     expect(docs[0].type).to.equal('exercise');
-                    expect(docs[1].type).to.equal('eating');
+                    expect(docs[1].type).to.equal('meal');
                     expect(docs[2].type).to.equal('bill');
                     expect(docs[3].type).to.equal('exercise');
                     expect(docs[4].type).to.equal('medication');

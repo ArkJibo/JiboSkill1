@@ -130,14 +130,14 @@ class Model {
 
     /**
      * Get the entire schedule for a day
-     * @param day The day to get schedule for
+     * @param date The day to get schedule for
      * @param cb Callback
      */
-    getDaySchedule (day, cb) {
+    getDaySchedule (date, cb) {
         var self = this;
 
-        var start = moment(day).startOf('day').format('x');
-        var end = moment(day).endOf('day').format('x');
+        var start = moment(date).startOf('day').format('x');
+        var end = moment(date).endOf('day').format('x');
         var params = self._processCustomMatchingParams({
             _custom: [{
                 key: 'time',
@@ -327,8 +327,8 @@ class Model {
                             delete params.repeatInfo;
 
                             //  Add all events leading up to end time
-                            var currTime = moment(parseInt(params.time, 10));
-                            while (currTime.format('x') <= moment(parseInt(repeatInfo.endTime, 10)).format('x')) {
+                            var currTime = moment(parseInt(params.time));
+                            while (currTime.format('x') <= moment(parseInt(repeatInfo.endTime)).format('x')) {
                                 //  Update time value and add to array
                                 var newParams = _.cloneDeep(params);
                                 newParams.time = currTime.format('x');
@@ -493,7 +493,7 @@ class Model {
                 var i = _.indexOf(dateKeys, key);
                 if (i >= 0) {
                     //  Is date, make sure it's valid
-                    var toMs = parseInt(params[key], 10);
+                    var toMs = parseInt(params[key]);
                     if (!toMs || !moment(toMs).isValid()) {
                         //  Invalid, abort everything
                         return false;

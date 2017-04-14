@@ -1,10 +1,8 @@
 'use strict';
 
 module.exports = function (grunt) {
-
     grunt.loadNpmTasks('grunt-shell');
     grunt.loadNpmTasks('grunt-mocha-test');
-    grunt.loadNpmTasks('grunt-env');
     grunt.loadNpmTasks('grunt-eslint');
 
     grunt.initConfig({
@@ -24,18 +22,10 @@ module.exports = function (grunt) {
                 },
                 src: ['test/top.js']
             }
-        },
-        env: {
-            dev: {
-                NODE_ENV: 'development'
-            },
-            build: {
-                NODE_ENV: 'production'
-            }
         }
     });
 
-    grunt.registerTask('build', ['test', 'env:build', 'shell']);
-    grunt.registerTask('test', ['env:dev', 'lint', 'mochaTest']);
+    grunt.registerTask('build', ['test', 'shell']);
+    grunt.registerTask('test', ['lint', 'mochaTest']);
     grunt.registerTask('lint', ['eslint']);
 };

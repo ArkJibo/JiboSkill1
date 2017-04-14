@@ -1,7 +1,12 @@
 TopRule = $* (
-    $runTestsRule { action = 'testing' } { type = runTestsRule._type }
+    $runTestsRules { action = 'testing' } { type = runTestsRules._type } |
+    $calendarRules { action = 'schedule' } { date = calendarRules._date }
 );
 
-runTestsRule = run $testType { _type = testType._type } [test?s];
-
+runTestsRules = run $testType { _type = testType._type } [test?s];
 testType @= ($w) { _type = _parsed };
+
+calendarRules = my (schedule|calendar) $* (
+    $factory:date { _date = date._date_nl } |
+    $* { _date = 'NO-PARSE' }
+);

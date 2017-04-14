@@ -1,10 +1,15 @@
-
 'use strict';
 
 var proxyquire = require('proxyquire');
 
+var config = require('../../config/default');
 var Controller = proxyquire('../../src/core/controller', {
-    './email-client': class EmailClient {}  //  Fake client so it doesn't try to connect online
+    './email-client': class EmailClient {},  //  Fake client so it doesn't try to connect online
+    '../../config/default': {   //  Replace model db with test db
+        model: {
+            db: config.model.testDb
+        }
+    }
 });
 var EventBus = require('../../src/core/event/event-bus');
 var events = require('../../src/core/event/event');

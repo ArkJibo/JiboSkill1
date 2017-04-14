@@ -8,7 +8,7 @@ util.EVENT_TYPE = {
     APPOINTMENT: 'appointment',
     MEDICATION: 'medication',
     EXERCISE: 'exercise',
-    EATING: 'stock',
+    MEAL: 'meal',
     SHOPPING: 'shopping',
     BILL: 'bill',
     SOCIAL: 'social'

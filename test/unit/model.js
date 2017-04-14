@@ -1,6 +1,3 @@
-/* global describe, it, before, beforeEach, afterEach */
-/*jshint expr: true*/
-
 'use strict';
 
 var async = require('async');
@@ -8,13 +5,13 @@ var moment = require('moment');
 var Model = require('../../src/model');
 var errors = require('../../src/errors');
 var expect = require('chai').expect;
-var config = require('config');
 var util = require('../../src/util');
+var config = require('../../config/default');
 
 describe('Model', function () {
     var model;
     before(function () {
-        model = new Model(config.get('model.db'));
+        model = new Model(config.model.testDb);
     });
 
     afterEach(function (done) {

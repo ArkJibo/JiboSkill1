@@ -7,6 +7,7 @@
         "asset-pack": "core",
         "children": [
             "29c07075-d765-4f2b-af75-3c9532a2e306",
+            "a3608610-246a-43bb-9416-7af4e96c9d26",
             "581fef1e-c925-4994-ad97-6e643c869e1c"
         ],
         "decorators": [
@@ -65,10 +66,13 @@
             "onResult": [
                 "(listener) => {",
                 "\tlistener.on('hey-jibo', function(asrResult, speakerIds) {",
-                "\t\tnotepad.idleSwitch = {",
-                "\t        type: 'user',",
-                "\t        params: asrResult",
-                "\t    };",
+                "\t\tnotepad.addSwitchCondition('idleSwitch', 'user');",
+                "\t    notepad.addItem({",
+                "\t        name: 'voice-command',",
+                "\t        item: asrResult,",
+                "\t        overwrite: true,",
+                "\t        permanent: false",
+                "\t    });",
                 "\t});",
                 "}"
             ]
@@ -83,10 +87,11 @@
             "eventName": "INTERRUPT_IDLE",
             "onEvent": [
                 "(params) => {",
-                "    notepad.idleSwitch = {",
-                "        type: 'event',",
-                "        params: params",
-                "    };",
+                "    notepad.addSwitchCondition('idleSwitch', 'event');",
+                "    notepad.addItem({",
+                "        name: 'voiceCommand',",
+                "        item: params",
+                "    });",
                 "}"
             ]
         },
@@ -132,6 +137,7 @@
         "children": [
             "6f5ccb04-dce1-4cbb-ae39-94b3dea514d0",
             "1b613220-b75d-471d-958a-5738daee6227",
+            "acb73c80-35bd-49b9-aa05-e7571c96f59d",
             "0fd361b1-fddc-4a42-83cd-4a6149a0e259"
         ]
     },
@@ -142,7 +148,7 @@
         "options": {
             "conditional": [
                 "() => {",
-                "    return notepad.idleSwitch.type === 'user';",
+                "    return notepad.getSwitchCondition('idleSwitch') === 'user';",
                 "}"
             ]
         },
@@ -155,7 +161,7 @@
         "options": {
             "conditional": [
                 "() => {",
-                "    return notepad.idleSwitch.type === 'event';",
+                "    return notepad.getSwitchCondition('idleSwitch') === 'event';",
                 "}"
             ]
         },
@@ -193,7 +199,7 @@
         "options": {
             "getOptions": [
                 "() => {",
-                "    let options = {",
+                "    var options = {",
                 "        heyJibo: false,",
                 "        detectEnd: false,",
                 "        incremental: false,",
@@ -206,14 +212,10 @@
             "onResult": [
                 "(listener) => {",
                 "    listener.on('cloud', function(asrResult, speakerIds) {",
-                "        var MainListener = require('../listeners/main');",
-                "        var main = new MainListener();",
-                "        main.process(asrResult);",
-                "        ",
-                "        //  Set notepad value for switch",
-                "        notepad.userCommandSwitch = {",
-                "            subtree: asrResult.NLParse.action",
-                "        };",
+                "        notepad.addItem({",
+                "            name: 'commandListen',",
+                "            item: asrResult.NLParse",
+                "        });",
                 "    });",
                 "}"
             ]
@@ -241,7 +243,7 @@
             "behaviorPath": "testing.bt",
             "getNotepad": [
                 "() => {",
-                "    return {};",
+                "    return notepad;",
                 "}"
             ],
             "onResult": [
@@ -262,7 +264,7 @@
         "options": {
             "conditional": [
                 "() => {",
-                "    return notepad.userCommandSwitch.subtree === 'testing';",
+                "    return notepad.getSwitchCondition('userCommandSwitch') === 'testing';",
                 "}"
             ]
         },
@@ -271,12 +273,12 @@
     "bba0c15f-4ab4-4852-bee7-5c231b7422d4": {
         "id": "bba0c15f-4ab4-4852-bee7-5c231b7422d4",
         "class": "Subtree",
-        "name": "Calendar subtree",
+        "name": "Schedule subtree",
         "options": {
-            "behaviorPath": "calendar.bt",
+            "behaviorPath": "schedule.bt",
             "getNotepad": [
                 "() => {",
-                "    return {};",
+                "    return notepad;",
                 "}"
             ],
             "onResult": [
@@ -297,7 +299,7 @@
         "options": {
             "conditional": [
                 "() => {",
-                "    return notepad.userCommandSwitch.subtree === 'calendar';",
+                "    return notepad.getSwitchCondition('userCommandSwitch') === 'schedule';",
                 "}"
             ]
         },
@@ -311,7 +313,7 @@
             "behaviorPath": "reminder.bt",
             "getNotepad": [
                 "() => {",
-                "    return {};",
+                "    return notepad;",
                 "}"
             ],
             "onResult": [
@@ -332,10 +334,73 @@
         "options": {
             "conditional": [
                 "() => {",
-                "    return notepad.idleSwitch.params.type === 'reminder';",
+                "    return notepad.getItem('voiceCommand').type === 'reminder';",
                 "}"
             ]
         },
         "asset-pack": "core"
+    },
+    "5e558a40-3185-4488-ad53-710ac9069487": {
+        "id": "5e558a40-3185-4488-ad53-710ac9069487",
+        "class": "LookAt",
+        "name": "",
+        "options": {
+            "getTarget": [
+                "() => {",
+                "    return {x: 1, y: 0, z: 1};",
+                "}"
+            ],
+            "isContinuous": false,
+            "config": [
+                "(lookAt) => {",
+                "}"
+            ]
+        },
+        "asset-pack": "core",
+        "parent": "a3608610-246a-43bb-9416-7af4e96c9d26"
+    },
+    "acb73c80-35bd-49b9-aa05-e7571c96f59d": {
+        "id": "acb73c80-35bd-49b9-aa05-e7571c96f59d",
+        "class": "ExecuteScriptAsync",
+        "name": "Process what was heard",
+        "options": {
+            "exec": [
+                "(succeed, fail) => {",
+                "    var MainListener = require('../listeners/main');",
+                "    var main = new MainListener(blackboard, notepad);",
+                "    main.process(notepad.getItem('commandListen'), function () {",
+                "        //  Set notepad value for switch",
+                "        notepad.addSwitchCondition('userCommandSwitch', notepad.getItem('commandListen').action);",
+                "        succeed();",
+                "    });",
+                "}"
+            ]
+        },
+        "asset-pack": "core",
+        "parent": "d501889a-3359-4553-9daa-193ba3af1cf2"
+    },
+    "c39af355-6d9c-436c-96cf-835060384069": {
+        "id": "c39af355-6d9c-436c-96cf-835060384069",
+        "class": "PlayAudio",
+        "name": "",
+        "options": {
+            "audioPath": "FX_Bleep.mp3"
+        },
+        "asset-pack": "core",
+        "parent": "a3608610-246a-43bb-9416-7af4e96c9d26"
+    },
+    "a3608610-246a-43bb-9416-7af4e96c9d26": {
+        "id": "a3608610-246a-43bb-9416-7af4e96c9d26",
+        "class": "Parallel",
+        "name": "",
+        "options": {
+            "succeedOnOne": false
+        },
+        "asset-pack": "core",
+        "parent": 1,
+        "children": [
+            "5e558a40-3185-4488-ad53-710ac9069487",
+            "c39af355-6d9c-436c-96cf-835060384069"
+        ]
     }
 }

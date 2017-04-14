@@ -6,7 +6,7 @@ var BookKeeper = require('./book-keeper');
 var events = require('./event/event');
 var util = require('../util');
 var _ = require('lodash');
-var config = require('config');
+var config = require('../../config/default');
 var async = require('async');
 var moment = require('moment');
 
@@ -18,11 +18,8 @@ class Controller {
     constructor (eventBus) {
         var self = this;
 
-        //  DB files differ based on NODE_ENV
-        var db = config.get('model.db');
-
         self._eventBus = eventBus;
-        self._model = new Model(db);
+        self._model = new Model(config.model.db);
         self._emailClient = new EmailClient('BIG FAKE NAME', eventBus);
         self._bookkeeper = new BookKeeper();
 
@@ -240,7 +237,7 @@ class Controller {
     _fetchSchedule (params, cb) {
         var self = this;
 
-        self._model.getDaySchedule(params.day || moment(), cb);
+        self._model.getDaySchedule(params.date || moment(), cb);
     }
 
     /**

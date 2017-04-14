@@ -4,7 +4,6 @@
   "description": "",
   "main": "index.html",
   "scripts": {
-    "test": "mocha"
   },
   "repository": {
     "type": "git",
@@ -13,7 +12,6 @@
   "dependencies": {
     "async": "^2.1.2",
     "behaviorify": "^1.0.0",
-    "config": "^1.25.1",
     "imap": "^0.8.19",
     "jibo": "^3.0.7",
     "jsonfile": "^2.4.0",
