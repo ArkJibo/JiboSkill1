@@ -4,7 +4,7 @@ var Mocha = require('mocha');
 var fs = require('fs');
 var path = require('path');
 
-module.exports = function (asrResult, speakerIds) {
+module.exports = function (asrResult) {
     //  Get the variables set by main.rule
     var params = asrResult.NLParse;
     if (params.action === 'testing') {

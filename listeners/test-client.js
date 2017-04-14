@@ -8,69 +8,67 @@ var Q = require('q');
 class TestClient {
 
     constructor () {
-      var self = this;
-      self._testResult = Q.defer();
-      self._testName = Q.defer();
-      self.total = 0;
-      self.pass = 0;
-
+        var self = this;
+        self._testResult = Q.defer();
+        self._testName = Q.defer();
+        self.total = 0;
+        self.pass = 0;
     }
 
-    resetPromise(){
-      var self = this;
-      self._testResult = Q.defer();
-      self._testName = Q.defer();
+    resetPromise () {
+        var self = this;
+        self._testResult = Q.defer();
+        self._testName = Q.defer();
     }
 
-    getTestResult(){
-      var self = this;
-      return self._testResult.promise;
+    getTestResult () {
+        var self = this;
+        return self._testResult.promise;
     }
 
-    getTestName(){
-      var self = this;
-      return self._testName.promise;
+    getTestName () {
+        var self = this;
+        return self._testName.promise;
     }
 
-    runTest(asrResult, speakerIds){
-      var self = this;
-      this.total = 0;
-      this.pass = 0;
-      var result = [];
-      var status = undefined;
+    runTest (asrResult) {
+        var self = this;
+        this.total = 0;
+        this.pass = 0;
+        var result = [];
+        var status = undefined;
 
-      //  Get the variables set by main.rule
-      var params = asrResult.NLParse;
-      if (params.action === 'testing') {
-          var dir = '';
-          switch (params.type) {
-              case 'unit':
-                  dir = './test/unit/';
-                  break;
+        //  Get the variables set by main.rule
+        var params = asrResult.NLParse;
+        if (params.action === 'testing') {
+            var dir = '';
+            switch (params.type) {
+                case 'unit':
+                    dir = './test/unit/';
+                    break;
 
-              case 'functional':
-                  dir = './test/func/';
-                  break;
-              default:
-                  status = {
-                    "status": false,
-                    "msg": "Can't run unknown tests!"
-                  };
-                  self._testName.resolve(status);
-                  return;
-                  break;
-          }
+                case 'functional':
+                    dir = './test/func/';
+                    break;
+                default:
+                    status = {
+                        'status': false,
+                        'msg': 'Can\'t run unknown tests!'
+                    };
+                    self._testName.resolve(status);
+                    return;
+            }
 
             var alertMsg = ('Running ' + params.type + ' tests in directory ' + dir);
             status = {
-              "status": true,
-              "msg": alertMsg
+                'status': true,
+                'msg': alertMsg
             };
             self._testName.resolve(status);
 
             //  Add all the tests in the folder to mocha
             var mocha = new Mocha({
-              timeout: 10000
+                timeout: 10000
             });
             fs.readdirSync(dir).filter(function (file) {
                 //  Only add js files
@@ -80,32 +78,29 @@ class TestClient {
             });
 
             mocha.run()
-            .on('pass', function(test) {
-              var testObj = {
-                "title": test.title,
-                "passed": true,
-                "error": null
-              };
-              result.push(testObj);
-              this.total += 1;
-              this.pass += 1;
-            })
-            .on('fail', function(test, err) {
-              var testObj = {
-                "title": test.title,
-                "passed": false,
-                "error": err
-              };
-              result.push(testObj);
-              this.total += 1;
-            })
-            .on('end', function() {
-
-              self._testResult.resolve(result);
-
-            });
-        
-      }
+                .on('pass', function (test) {
+                    var testObj = {
+                        'title': test.title,
+                        'passed': true,
+                        'error': null
+                    };
+                    result.push(testObj);
+                    this.total += 1;
+                    this.pass += 1;
+                })
+                .on('fail', function (test, err) {
+                    var testObj = {
+                        'title': test.title,
+                        'passed': false,
+                        'error': err
+                    };
+                    result.push(testObj);
+                    this.total += 1;
+                })
+                .on('end', function () {
+                    self._testResult.resolve(result);
+                });
+        }
     }
 }
 
