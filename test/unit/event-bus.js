@@ -168,16 +168,6 @@ describe('EventBus', function () {
             eventBus.on('event', cb);
             eventBus.emitEvent('event', params);
         });
-
-        it('should fail for bad args', function (done) {
-            try {
-                eventBus.emitEvent(1);
-                done('Should hit exception');
-            } catch (e) {
-                expect(e).to.equal(errors.BAD_EVENT);
-                done();
-            }
-        });
     });
 
     describe('#_validateArgs', function () {

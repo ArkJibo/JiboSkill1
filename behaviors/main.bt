@@ -208,7 +208,7 @@
                 "    listener.on('cloud', function(asrResult, speakerIds) {",
                 "        var MainListener = require('../listeners/main');",
                 "        var main = new MainListener();",
-                "        main.process(asrResult.NLParse, speakerIds);",
+                "        main.process(asrResult);",
                 "        ",
                 "        //  Set notepad value for switch",
                 "        notepad.userCommandSwitch = {",

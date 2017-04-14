@@ -1,20 +1,34 @@
 'use strict';
 
-var Mocha = require('mocha');
-var fs = require('fs');
-var path = require('path');
+var TestClient = require('./test-client');
 
 class MainListener {
 
     constructor () {}
 
-    process (params, speakerIds) {
+    process (asrResult) {
         //  Get the variables set by main.rule
+        var params = asrResult.NLParse;
         switch (params.action) {
             case 'testing':
                 //  Call listener for handling testing
+                var testClient = new TestClient();
+                testClient.runTest(asrResult);
+                testClient.getTestName().done(
+                    function (name) {
+                        if (name.status) {
+                            testClient.getTestResult().done(
+                                function () {
+                                    //  Post testResult to notepad
 
-            //  Future cases/listeners go here
+                                    testClient.resetPromise();
+                                }
+                            );
+                        }
+                    }
+                );
+
+                break;
         }
     }
 }
