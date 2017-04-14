@@ -1,41 +1,36 @@
 'use strict';
 
-var Mocha = require('mocha');
-var fs = require('fs');
-var path = require('path');
+var TestClient = require('./test-client');
 
-module.exports = function (asrResult) {
-    //  Get the variables set by main.rule
-    var params = asrResult.NLParse;
-    if (params.action === 'testing') {
-        var dir = '';
-        switch (params.type) {
-            case 'unit':
-                dir = './test/unit/';
-                break;
+class MainListener {
 
-            case 'functional':
-            case 'func':
-                dir = './test/func/';
+    constructor () {}
+
+    process (asrResult) {
+        //  Get the variables set by main.rule
+        var params = asrResult.NLParse;
+        switch (params.action) {
+            case 'testing':
+                //  Call listener for handling testing
+                var testClient = new TestClient();
+                testClient.runTest(asrResult);
+                testClient.getTestName().done(
+                    function (name) {
+                        if (name.status) {
+                            testClient.getTestResult().done(
+                                function () {
+                                    //  Post testResult to notepad
+
+                                    testClient.resetPromise();
+                                }
+                            );
+                        }
+                    }
+                );
+
                 break;
         }
-
-        console.log('Running ' + params.type + ' tests in directory ' + dir);
-
-        //  Add all the tests in the folder to mocha
-        var mocha = new Mocha();
-        fs.readdirSync(dir).filter(function (file) {
-            //  Only add js files
-            return path.extname(file) === '.js';
-        }).forEach(function (file) {
-            mocha.addFile(path.join(dir, file));
-        });
-
-        //  Run the tests
-        mocha.run(function (failures) {
-            process.on('exit', function () {
-                process.exit(failures);
-            });
-        });
     }
-};
+}
+
+module.exports = MainListener;
