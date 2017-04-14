@@ -98,5 +98,7 @@ describe('Email Client test:', function () {
           done();
 
         });
+      });
     });
+  });
 });

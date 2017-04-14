@@ -10,7 +10,7 @@ module.exports = function (grunt) {
     grunt.initConfig({
         pkg: grunt.file.readJSON('package.json'),
         eslint: {
-            target: ['src/**/*.js', 'test/**/*.js']
+            target: ['src/**/*.js', 'test/**/*.js', 'listeners/**/*.js']
         },
         shell: {
             jibo: {
@@ -23,6 +23,12 @@ module.exports = function (grunt) {
                     timeout: 10000
                 },
                 src: ['test/top.js']
+            },
+            email: {
+                options: {
+                    timeout: 10000
+                },
+                src: ['test/unit/emailClientTest.js']
             }
         },
         env: {

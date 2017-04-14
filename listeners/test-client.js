@@ -57,9 +57,9 @@ class TestClient {
                     "msg": "Can't run unknown tests!"
                   };
                   self._testName.resolve(status);
+                  return;
                   break;
           }
-          if (status == undefined){
 
             var alertMsg = ('Running ' + params.type + ' tests in directory ' + dir);
             status = {
@@ -79,14 +79,7 @@ class TestClient {
                 mocha.addFile(path.join(dir, file));
             });
 
-
             mocha.run()
-            .on('test', function(test) {
-
-            })
-            .on('test end', function(test) {
-
-            })
             .on('pass', function(test) {
               var testObj = {
                 "title": test.title,
@@ -111,7 +104,7 @@ class TestClient {
               self._testResult.resolve(result);
 
             });
-        }
+        
       }
     }
 }
