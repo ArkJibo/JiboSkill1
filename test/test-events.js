@@ -45,7 +45,7 @@ module.exports = [{ //  EVENTS TODAY
         endTime: moment(dayStart).add(1, 'year').format('x')
     }
 }, {
-    type: 'eating',
+    type: 'meal',
     subtype: 'breakfast',
     time: moment(dayStart).add(10, 'hours').format('x'),
     reminderInfo: {

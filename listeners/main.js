@@ -2,19 +2,21 @@
 
 class MainListener {
 
-    constructor (notepad) {
+    constructor (blackboard, notepad) {
         var self = this;
         self.notepad = notepad;
+        self.blackboard = blackboard;
     }
 
     /**
-     * @param params Contains the result of the voice interpretation
+     * @param result Contains the result of the voice interpretation
+     * @param cb Callback
      */
-    process (params) {
+    process (result, cb) {
         var self = this;
 
         //  Get the variables set by main.rule
-        switch (params.action) {
+        switch (result.action) {
             case 'testing':
                 //  Call listener for handling testing
 
@@ -22,8 +24,8 @@ class MainListener {
 
             case 'schedule':
                 var ScheduleListener = require('./schedule');
-                var scheduleListener = new ScheduleListener(self.notepad);
-                scheduleListener.process(params.day);
+                var scheduleListener = new ScheduleListener(self.blackboard, self.notepad);
+                scheduleListener.process(result, cb);
                 break;
         }
     }

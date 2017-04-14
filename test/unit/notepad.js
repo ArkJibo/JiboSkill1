@@ -106,6 +106,19 @@ describe('Notepad', function () {
             expect(notepad._notepad.erk.overwrite).to.be.false;
             expect(notepad._notepad.erk.permanent).to.be.false;
         });
+
+        it('should set defaults correctly', function () {
+            notepad.addItem({
+                name: 'erk',
+                item: {
+                    value: 'veg'
+                }
+            });
+            expect(notepad._notepad.erk).to.exist;
+            expect(notepad._notepad.erk.item.value).to.equal('veg');
+            expect(notepad._notepad.erk.overwrite).to.be.true;
+            expect(notepad._notepad.erk.permanent).to.be.false;
+        });
     });
 
     describe('#getItem()', function () {

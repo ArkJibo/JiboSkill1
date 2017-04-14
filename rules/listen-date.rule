@@ -1,0 +1,3 @@
+TopRule = $* (
+    $factory:date { date = date._date_nl }
+) $*;

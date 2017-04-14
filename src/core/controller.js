@@ -240,7 +240,7 @@ class Controller {
     _fetchSchedule (params, cb) {
         var self = this;
 
-        self._model.getDaySchedule(params.day || moment(), cb);
+        self._model.getDaySchedule(params.date || moment(), cb);
     }
 
     /**

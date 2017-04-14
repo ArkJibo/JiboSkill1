@@ -85,8 +85,8 @@ class Notepad {
 
         self._notepad[params.name] = {
             item: params.item,
-            overwrite: params.overwrite,
-            permanent: params.permanent
+            overwrite: _.isNil(params.overwrite) ? true : params.overwrite,
+            permanent: _.isNil(params.permanent) ? false : params.permanent
         };
     }
 
