@@ -50,8 +50,10 @@
             "rule": "hey_jibo",
             "onResult": [
                 "(listener) => {",
+
                 "\tlistener.on('hey-jibo', function(asrResult, speakerIds) {",
                 "\t\t",
+
                 "\t});",
                 "}"
             ]
@@ -92,6 +94,7 @@
             "rule": "main.rule",
             "onResult": [
                 "(listener) => {",
+
                 "    listener.on('cloud', function(asrResult, speakerIds) {",
                 "        notepad.asrResult = asrResult;",
                 "        notepad.speakerIds = speakerIds;",
@@ -99,6 +102,7 @@
                 "        ",
                 "        ",
                 "",
+
                 "    });",
                 "}"
             ]

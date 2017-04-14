@@ -4,11 +4,11 @@ var Model = require('../model');
 var EmailClient = require('./email-client');
 var BookKeeper = require('./book-keeper');
 var events = require('./event/event');
-var errors = require('../errors');
 var util = require('../util');
 var _ = require('lodash');
 var config = require('config');
 var async = require('async');
+var moment = require('moment');
 
 class Controller {
 
@@ -149,11 +149,16 @@ class Controller {
                                     }
 
                                     funcs.push(function (cb) {
-                                        self._model.addNewCollectionDoc(_collection, _docType, doc, function (err, docs) {
-                                            cb(err, {
-                                                add: docs
-                                            });
-                                        });
+                                        self._model.addNewCollectionDoc(
+                                            _collection,
+                                            _docType,
+                                            doc,
+                                            function (err, docs) {
+                                                cb(err, {
+                                                    add: docs
+                                                });
+                                            }
+                                        );
                                     });
                                     break;
 
@@ -169,11 +174,16 @@ class Controller {
 
                                 case 'modify':
                                     funcs.push(function (cb) {
-                                        self._model.updateCollection(_collection, doc.match, doc.changes, function (err, numAffected) {
-                                            cb(err, {
-                                                modify: numAffected
-                                            });
-                                        });
+                                        self._model.updateCollection(
+                                            _collection,
+                                            doc.match,
+                                            doc.changes,
+                                            function (err, numAffected) {
+                                                cb(err, {
+                                                    modify: numAffected
+                                                });
+                                            }
+                                        );
                                     });
                                     break;
                             }
@@ -227,11 +237,10 @@ class Controller {
     /**
      * Fetch schedule for the day
      */
-    _fetchSchedule () {
+    _fetchSchedule (params, cb) {
         var self = this;
-        var cb = arguments[1];
 
-        self._model.getTodaySchedule(cb);
+        self._model.getDaySchedule(params.day || moment(), cb);
     }
 
     /**
@@ -367,10 +376,7 @@ class Controller {
      * @param cb Callback
      */
     _unknownUserInput (params, cb) {
-        var self = this;
-
         //  Do something, like record metrics
-
         cb();
     }
 

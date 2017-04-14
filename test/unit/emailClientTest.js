@@ -1,30 +1,24 @@
-/* global describe, it, before, beforeEach, after, afterEach */
+/* global describe, it, before */
 
 'use strict';
 
-var assert = require('assert');
-var Datastore = require('nedb');
-var fs = require('fs');
-var async = require('async');
-var moment = require('moment');
-var Model = require('../../src/model');
-var Errors = require('../../src/errors');
 var expect = require('chai').expect;
-var util = require('../../src/util');
 var emailClient = require('../../src/core/email-client');
 var eventBus = require('../../src/core/event/event-bus');
-var Q = require('q');
 var eventObj = require('../../src/core/event/event');
 
-describe("Email Client", function() {
-  var email_Client;
-  var event_Bus;
 
-  before(function () {
-    //Instantiate email Client class
-    event_Bus = new eventBus();
-    email_Client = new emailClient("Roy Kim", event_Bus);
-  });
+describe('Email Client test:', function () {
+    var email_Client;
+    var event_Bus;
+
+
+    before(function () {
+        //Instantiate email Client class
+        event_Bus = new eventBus();
+        email_Client = new emailClient('Roy Kim', event_Bus);
+    });
+
 
   describe("Email functionality:", function() {
 
@@ -55,33 +49,31 @@ describe("Email Client", function() {
         expect(res.time).to.not.equal(null);
         listenCheck = true;
       });
+            var content = {
+                fromEmail: 'kimr07175@gmail.com',
+                fromName: 'Ben Lee',
+                subject: 'Hi',
+                body: 'Hello',
+                attachments: null
+            };
+            event_Bus.emitEvent(eventObj.SEND_EMAIL, content);
 
-      var content = {
-          fromEmail: "kimr07175@gmail.com",
-          fromName: "Ben Lee",
-          subject: "Hi",
-          body: "Hello",
-          attachments: null
-      };
-      event_Bus.emitEvent(eventObj['SEND_EMAIL'], content);
-
-      console.log("Alert: Sending a test email");
-      //loadsendcheck make sure the email was sent before we check whether we received it
-      email_Client._loadSendCheck().done(function(check){
-        setTimeout(function(){
-          console.log("Alert: checking");
-          //there should be new email
-          email_Client._loadStatus().done(function(status){
-            //there should be no new email
-            expect(status).to.equal("New mail");
-            expect(listenCheck).to.equal(true);
-            //indicating that the test is done
-            done();
-          });
-        }, 5000);
-      });
+            //loadsendcheck make sure the email was sent before we check whether we received it
+            email_Client._loadSendCheck().done(function () {
+                setTimeout(function () {
+                    //there should be new email
+                    email_Client._loadStatus().done(function (status) {
+                        //there should be no new email
+                        expect(status).to.equal('New mail');
+                        expect(listenCheck).to.equal(true);
+                        //indicating that the test is done
+                        done();
+                    });
+                }, 5000);
+            });
+        });
     });
-  });
+
 
   describe("Modify Email Client Variables:", function(){
     it("Should change username", function(){
@@ -104,9 +96,7 @@ describe("Email Client", function() {
           //email should be send successfully
           expect(check).to.equal(true);
           done();
-        });
-      });
-    });
-  });
 
+        });
+    });
 });

@@ -1,5 +1,3 @@
-/* global describe, it, before, beforeEach, after, afterEach */
-/*jshint expr: true*/
 
 'use strict';
 
@@ -12,10 +10,6 @@ var EventBus = require('../../src/core/event/event-bus');
 var events = require('../../src/core/event/event');
 var util = require('../../src/util');
 var errors = require('../../src/errors');
-var assert = require('assert');
-var fs = require('fs');
-var async = require('async');
-var Datastore = require('nedb');
 var expect = require('chai').expect;
 var moment = require('moment');
 
@@ -24,60 +18,15 @@ describe('Controller', function () {
     var controller;
     var presentTime = moment();
 
-    before(function (done) {
+    before(function () {
         eventBus = new EventBus();
         controller = new Controller(eventBus);
-        done();
-    });
-
-    var tempFiles = {
-        'events': './db/test-events.db',
-        'reminderQueue': './db/test-reminderQueue.db',
-        'inventory': './db/test-inventory.db',
-        'patient': './db/test-patient.db',
-        'people': './db/test-people.db',
-        'media': './db/test-media.db',
-        'entertainment': './db/test-entertainment.db',
-        'voice': './db/test-voice.db',
-        'credentials': './db/test-credentials.db'
-    };
-
-    var cleanup = function (cb) {
-        //  Delete the temp db files
-        var funcs = [];
-        Object.keys(tempFiles).forEach(function (key) {
-            funcs.push(function(cb) {
-                fs.unlink(tempFiles[key], function (err) {
-                    expect(err).to.not.exist;
-                    cb();
-                });
-            });
-        });
-        async.parallel(funcs, cb);
-    };
-
-    //  For cleaning up on ctrl+c
-    var rl = require('readline').createInterface({
-        input: process.stdin,
-        output: process.stdout
-    });
-    rl.on('SIGINT', function () {
-        cleanup(function () {
-            process.exit();
-        });
     });
 
     afterEach(function (done) {
         //  Clear contents of each temp db file
-        var functions = [];
-        Object.keys(controller._model._db).forEach(function (key) {
-            functions.push(function (cb) {
-                controller._model._db[key].remove({}, { multi: true }, cb);
-            });
-        });
-
-        async.parallel(functions, function (err, results) {
-            assert.equal(err, null);
+        controller._model._clearDatabase(function (err) {
+            expect(err).to.not.exist;
             done();
         });
     });
@@ -91,12 +40,12 @@ describe('Controller', function () {
             }, {
                 type: 'update-password',
                 password: 'buntimes'
-            }], function (err, docs) {
+            }], function (err) {
                 expect(err).to.not.exist;
 
                 controller._model._db.events.insert({
                     deez: 'nuts'
-                }, function (err, docs) {
+                }, function (err) {
                     expect(err).to.not.exist;
                     done();
                 });
@@ -226,6 +175,7 @@ describe('Controller', function () {
     describe('#_fetchSchedule()', function () {
         it('should get schedule from model and cb', function (done) {
             eventBus.emitEvent(events.FETCH_SCHEDULE, {
+                day: presentTime,
                 _cb: function (err, docs) {
                     expect(err).to.not.exist;
                     expect(docs.length).to.equal(0);
@@ -247,7 +197,7 @@ describe('Controller', function () {
             }, {
                 type: 'video',
                 timesViewed: 2
-            }], function (err, docs) {
+            }], function (err) {
                 expect(err).to.not.exist;
 
                 eventBus.emitEvent(events.STIMULATE_MEMORY, {
@@ -293,7 +243,7 @@ describe('Controller', function () {
                 relationship: 'sister-in-law',
                 birthday: presentTime.format('x'),
                 closeness: 9
-            }], function (err, docs) {
+            }], function (err) {
                 expect(err).to.not.exist;
 
                 eventBus.emitEvent(events.STIMULATE_MEMORY, {
@@ -337,7 +287,7 @@ describe('Controller', function () {
                 relationship: 'sister-in-law',
                 birthday: presentTime.format('x'),
                 closeness: 2
-            }], function (err, docs) {
+            }], function (err) {
                 expect(err).to.not.exist;
 
                 eventBus.emitEvent(events.STIMULATE_MEMORY, {
@@ -365,9 +315,9 @@ describe('Controller', function () {
     describe('#_fetchNextReminder()', function () {
         it('should pass on the call to model', function (done) {
             eventBus.emitEvent(events.FETCH_NEXT_REMINDER, {
-                _cb: function (err, docs) {
+                _cb: function (err, reminder) {
                     expect(err).to.not.exist;
-                    expect(docs.length).to.equal(0);
+                    expect(reminder).to.be.null;
                     done();
                 }
             });

@@ -8,9 +8,8 @@ var util = require('./util');
 var errors = require('./errors');
 var async = require('async');
 var _ = require('lodash');
-var crypto = require('crypto');
 
-var minRepeatInfoKeys = ['startTime', 'interval', 'endTime'];
+var minRepeatInfoKeys = ['interval', 'endTime'];
 var minReminderInfoKeys = ['numReminders', 'interval', 'startTime'];
 
 var minCollectionKeys = {};
@@ -48,6 +47,7 @@ minCollectionKeys[util.COLLECTION_TYPE.EMAIL] = {
 
 var dateKeys = ['time', 'date', 'lastTaken', 'startTime', 'endTime', 'birthday', 'dateAdded', 'lastUsed'];
 var timeModifiers = {
+    mm: 'minutes',
     h: 'hours',
     d: 'days',
     w: 'weeks',
@@ -84,7 +84,7 @@ class Model {
         self._db[util.COLLECTION_TYPE.CREDS] = new Datastore(db.credentials);
         self._db[util.COLLECTION_TYPE.EMAIL] = new Datastore(db.emails);
 
-        Object.keys(self._db).forEach(function(col) {
+        Object.keys(self._db).forEach(function (col) {
             self._db[col].loadDatabase();
         });
     }
@@ -99,7 +99,7 @@ class Model {
         var self = this;
 
         //  Get today's events
-        self.getTodaySchedule(function (err, docs) {
+        self.getDaySchedule(moment(), function (err, docs) {
             if (err) {
                 cb(err);
             } else {
@@ -129,14 +129,15 @@ class Model {
     }
 
     /**
-     * Get the entire schedule for today
+     * Get the entire schedule for a day
+     * @param day The day to get schedule for
      * @param cb Callback
      */
-    getTodaySchedule (cb) {
+    getDaySchedule (day, cb) {
         var self = this;
 
-        var start = moment().startOf('day').format('x');
-        var end = moment().endOf('day').format('x');
+        var start = moment(day).startOf('day').format('x');
+        var end = moment(day).endOf('day').format('x');
         var params = self._processCustomMatchingParams({
             _custom: [{
                 key: 'time',
@@ -162,13 +163,10 @@ class Model {
     getNextReminder (cb) {
         var self = this;
 
-        //  First remove any expired reminders
+        //  First remove any viewed reminders
         self._removeFromCollection(util.COLLECTION_TYPE.REMINDER_QUEUE, {
-            time: {
-                $lte: moment().format('x')
-            },
-            viewed: true    //  Only remove ones that have been viewed
-        }, removeOptions, function (err, numRemoved) {
+            viewed: true
+        }, removeOptions, function (err) {
             if (err) {
                 cb(err);
             } else {
@@ -179,7 +177,7 @@ class Model {
                     { time: 1 },    //  1 means ascending order
                     function (err, docs) {
                         //  Return earliest reminder
-                        cb(err, docs.length === 0 ? docs : docs[0]);
+                        cb(err, docs.length === 0 ? null : docs[0]);
                     }
                 );
             }
@@ -229,7 +227,7 @@ class Model {
         self._getFromCollectionSorted(util.COLLECTION_TYPE.EVENTS, params, {
             time: 1
         }, function (err, docs) {
-                cb(err, docs ? docs[0] : null);
+            cb(err, docs ? docs[0] : null);
         });
     }
 
@@ -321,7 +319,7 @@ class Model {
                     if (err) {
                         cb(err);
                     } else {
-                        var events = [params];
+                        var events = [];
 
                         //  Check for repeat info
                         if (params.repeatInfo) {
@@ -329,7 +327,7 @@ class Model {
                             delete params.repeatInfo;
 
                             //  Add all events leading up to end time
-                            var currTime = moment(parseInt(repeatInfo.startTime, 10));
+                            var currTime = moment(parseInt(params.time, 10));
                             while (currTime.format('x') <= moment(parseInt(repeatInfo.endTime, 10)).format('x')) {
                                 //  Update time value and add to array
                                 var newParams = _.cloneDeep(params);
@@ -339,6 +337,8 @@ class Model {
                                 //  Add time interval to currTime
                                 currTime.add(repeatInfo.interval.value, timeModifiers[repeatInfo.interval.modifier]);
                             }
+                        } else {
+                            events.push(params);
                         }
 
                         self._addToCollection(type, events, cb);
@@ -512,8 +512,6 @@ class Model {
      * @param keys Keys to look for
      */
     _checkForKeys (obj, keys) {
-        var self = this;
-
         if (!obj || !keys) {
             return false;
         }
@@ -645,6 +643,7 @@ class Model {
      */
     _addToCollection (collection, docs, cb) {
         var self = this;
+
         self._db[collection].insert(docs, function (err, docs) {
             if (!docs.length) {
                 //  Convert to array
@@ -689,6 +688,23 @@ class Model {
     _clearCollection (collection, cb) {
         var self = this;
         self._db[collection].remove({}, { multi: true }, cb);
+    }
+
+    /**
+     * Wipes everything good lord have mercy
+     * @param cb Callback
+     */
+    _clearDatabase (cb) {
+        var self = this;
+
+        var funcs = [];
+        Object.keys(self._db).forEach(function (collection) {
+            funcs.push(function (cb) {
+                self._clearCollection(collection, cb);
+            });
+        });
+
+        async.parallel(funcs, cb);
     }
 }
 
