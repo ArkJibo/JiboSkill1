@@ -232,7 +232,9 @@ class EmailClient {
                             //  Fetch the entire email bodies
                             var f = self._imap.fetch(results, {
                                 bodies: [''],
-                                markSeen: true //don't mark as seen until the user actually sees it
+
+                                markSeen: true 
+
                             });
 
                             f.on('message', function (msg) {

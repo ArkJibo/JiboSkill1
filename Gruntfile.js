@@ -10,7 +10,7 @@ module.exports = function (grunt) {
     grunt.initConfig({
         pkg: grunt.file.readJSON('package.json'),
         eslint: {
-            target: ['src/**/*.js', 'test/**/*.js']
+            target: ['src/**/*.js', 'test/**/*.js', 'listeners/**/*.js']
         },
         shell: {
             jibo: {

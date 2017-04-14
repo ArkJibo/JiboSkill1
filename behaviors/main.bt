@@ -7,7 +7,10 @@
         "children": [
             "29c07075-d765-4f2b-af75-3c9532a2e306",
             "8ee52483-66b8-41a1-b1e2-8afb90a53aab",
-            "6cf1f411-f86d-48d2-b898-72a997ac5326"
+            "6cf1f411-f86d-48d2-b898-72a997ac5326",
+            "d28c1b4c-ba12-4196-8948-d92727e723a3",
+            "c0d2011c-0119-4557-9f0a-e97379489b2c",
+            "c200d34b-4356-4904-92ce-eb34cd1812f9"
         ],
         "decorators": [
             "c5468334-737e-4b4b-aa09-5fc1c6b7f477"
@@ -47,8 +50,10 @@
             "rule": "hey_jibo",
             "onResult": [
                 "(listener) => {",
-                "\tlistener.on('hey-jibo', function (asrResult, speakerIds) {",
-                "",
+
+                "\tlistener.on('hey-jibo', function(asrResult, speakerIds) {",
+                "\t\t",
+
                 "\t});",
                 "}"
             ]
@@ -89,15 +94,22 @@
             "rule": "main.rule",
             "onResult": [
                 "(listener) => {",
-                "    listener.on('cloud', function (asrResult, speakerIds) {",
-                "        var mainListener = require('../listeners/main');",
-                "        mainListener(asrResult, speakerIds);",
+
+                "    listener.on('cloud', function(asrResult, speakerIds) {",
+                "        notepad.asrResult = asrResult;",
+                "        notepad.speakerIds = speakerIds;",
+                "        ",
+                "        ",
+                "        ",
+                "",
+
                 "    });",
                 "}"
             ]
         },
         "asset-pack": "core",
-        "parent": 1
+        "parent": 1,
+        "decorators": []
     },
     "c5468334-737e-4b4b-aa09-5fc1c6b7f477": {
         "id": "c5468334-737e-4b4b-aa09-5fc1c6b7f477",
@@ -115,5 +127,99 @@
             ]
         },
         "asset-pack": "core"
+    },
+    "c0d2011c-0119-4557-9f0a-e97379489b2c": {
+        "id": "c0d2011c-0119-4557-9f0a-e97379489b2c",
+        "class": "TextToSpeechJs",
+        "name": "",
+        "options": {
+            "getWords": [
+                "(callback) => {",
+                "  var testClient = notepad.testClient;",
+                "  ",
+                "  console.log(\"status: \", name[\"status\"]);",
+                "  testClient.getTestName().done(",
+                "    function(name){",
+                "      ",
+                "      if (name[\"status\"] == true){",
+                "        testClient.getTestResult().done(",
+                "          function(testResult){",
+                "            notepad.testRes = testResult;",
+                "            var result = testClient.pass + \" of \" + testClient.total + \" test cases passed!\";",
+                "            callback(result);",
+                "          }",
+                "        );",
+                "      }",
+                "      else{",
+                "        callback(\"No tests are run\");",
+                "      }",
+                "    }",
+                "  );",
+                "",
+                "  ",
+                "  ",
+                "}"
+            ],
+            "onWord": [
+                "(word) => {",
+                "}"
+            ]
+        },
+        "asset-pack": "core",
+        "parent": 1,
+        "decorators": []
+    },
+    "d28c1b4c-ba12-4196-8948-d92727e723a3": {
+        "id": "d28c1b4c-ba12-4196-8948-d92727e723a3",
+        "class": "TextToSpeechJs",
+        "name": "",
+        "options": {
+            "getWords": [
+                "(callback) => {",
+                "  var Q = require('q');",
+                "  var testClient = require('../listeners/test-client');",
+                "  var test_Client = new testClient();",
+                "  ",
+                "  test_Client.runTest(notepad.asrResult, notepad.speakerIds);",
+                "  ",
+                "  test_Client.getTestName().done(",
+                "    function(name){",
+                "      notepad.testClient = test_Client;",
+                "      console.log(\"status: \", name[\"status\"]);",
+                "      callback(name[\"msg\"]);",
+                "    }",
+                "  );",
+                "  ",
+                "}"
+            ],
+            "onWord": [
+                "(word) => {",
+                "}"
+            ]
+        },
+        "asset-pack": "core",
+        "parent": 1
+    },
+    "c200d34b-4356-4904-92ce-eb34cd1812f9": {
+        "id": "c200d34b-4356-4904-92ce-eb34cd1812f9",
+        "class": "TextToSpeechJs",
+        "name": "",
+        "options": {
+            "getWords": [
+                "(callback) => {",
+                "  callback(\"Exiting testing\");",
+                "  var testClient = notepad.testClient;",
+                "  testClient.resetPromise();",
+                "  ",
+                "}"
+            ],
+            "onWord": [
+                "(word) => {",
+                "}"
+            ]
+        },
+        "asset-pack": "core",
+        "parent": 1,
+        "decorators": []
     }
 }

@@ -17,9 +17,9 @@ describe('Email Client test:', function () {
         email_Client = new emailClient('Roy Kim', event_Bus);
     });
 
-    describe('Checking email functionality:', function () {
+    describe('Email functionality:', function () {
 
-        it('Check inbox with no new email', function (done) {
+        it('Should pass with no new mails', function (done) {
             //intiating checking email client
             email_Client._checkEmails();
             //loadstatus make sure that there is a reponse from server before we check
@@ -31,7 +31,7 @@ describe('Email Client test:', function () {
             });
         });
 
-        it('Check inbox with new email and sending email with event listener', function (done) {
+        it('Should send an email and pass with new email', function (done) {
             //send email to ourself
             var listenCheck = false;
             //start listen event bus
@@ -45,7 +45,6 @@ describe('Email Client test:', function () {
                 expect(res.time).to.not.equal(null);
                 listenCheck = true;
             });
-
             var content = {
                 fromEmail: 'kimr07175@gmail.com',
                 fromName: 'Ben Lee',
@@ -71,14 +70,15 @@ describe('Email Client test:', function () {
         });
     });
 
-    describe('Changing email client variable:', function () {
-        it('Changing username', function () {
+
+    describe('Modify Email Client Variables:', function () {
+        it('Should change username', function () {
             //changing username
             email_Client._changeName('Ben10');
             expect(email_Client._name).to.equal('Ben10');
         });
 
-        it('Changing email', function (done) {
+        it('Should change email and password', function (done) {
             email_Client._changeEmail('kimr07175@gmail.com', 'Benji-1717');
             //loadchangecheck make sure new email info is updated on json file
             email_Client._loadChangeCheck().done(function (changeCheck) {
