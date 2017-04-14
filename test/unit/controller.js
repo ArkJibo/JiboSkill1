@@ -1,7 +1,6 @@
 'use strict';
 
 var proxyquire = require('proxyquire');
-
 var config = require('../../config/default');
 var Controller = proxyquire('../../src/core/controller', {
     './email-client': class EmailClient {},  //  Fake client so it doesn't try to connect online

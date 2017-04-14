@@ -13,10 +13,26 @@
     },
     "c31742be-b806-49f1-acca-718a86105557": {
         "id": "c31742be-b806-49f1-acca-718a86105557",
-        "class": "TextToSpeech",
+        "class": "TextToSpeechJs",
         "name": "",
         "options": {
-            "words": "Doing cool testing stuff!",
+            "getWords": [
+                "(callback) => {",
+                "    //  Get the test results from notepad",
+                "    var results = notepad.getItem('testResult');",
+                "    ",
+                "    //  Figure out how many passed",
+                "    var totalTests = results.length;",
+                "    var totalPassed = 0;",
+                "    results.forEach(function (test) {",
+                "        if (test.passed) {",
+                "            totalPassed++;",
+                "        }",
+                "    });",
+                "    ",
+                "    callback(totalPassed + ' out of ' + totalTests + ' tests passed.');",
+                "}"
+            ],
             "onWord": [
                 "(word) => {",
                 "}"

@@ -38,8 +38,6 @@ class TestClient {
         var result = [];
         var status = undefined;
 
-        process.env.NODE_ENV = 'development';
-
         //  Get the variables set by main.rule
         var dir = '';
         switch (asrResult.type) {
