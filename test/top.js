@@ -2,13 +2,13 @@
 
 var fs = require('fs');
 var path = require('path');
-var config = require('config');
+var config = require('../config/default');
 var async = require('async');
 
 var cleanup = function (cb) {
     //  Delete the temp db files
     var funcs = [];
-    var files = config.get('model.db');
+    var files = config.model.testDb;
     Object.keys(files).forEach(function (key) {
         funcs.push(function (cb) {
             fs.unlink(files[key], function () {

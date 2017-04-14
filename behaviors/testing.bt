@@ -1,0 +1,28 @@
+{
+    "1": {
+        "id": 1,
+        "class": "Sequence",
+        "name": "",
+        "options": {},
+        "children": [
+            "c31742be-b806-49f1-acca-718a86105557"
+        ]
+    },
+    "meta": {
+        "version": 1
+    },
+    "c31742be-b806-49f1-acca-718a86105557": {
+        "id": "c31742be-b806-49f1-acca-718a86105557",
+        "class": "TextToSpeech",
+        "name": "",
+        "options": {
+            "words": "Doing cool testing stuff!",
+            "onWord": [
+                "(word) => {",
+                "}"
+            ]
+        },
+        "asset-pack": "core",
+        "parent": 1
+    }
+}
