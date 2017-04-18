@@ -1,0 +1,162 @@
+{
+    "1": {
+        "id": 1,
+        "class": "Sequence",
+        "name": "",
+        "options": {},
+        "children": [
+            "9509ad4e-468b-419c-9acd-d05dae067cd1"
+        ]
+    },
+    "meta": {
+        "version": 1
+    },
+    "9509ad4e-468b-419c-9acd-d05dae067cd1": {
+        "id": "9509ad4e-468b-419c-9acd-d05dae067cd1",
+        "class": "Switch",
+        "name": "",
+        "options": {},
+        "asset-pack": "core",
+        "parent": 1,
+        "children": [
+            "a756ee2e-f1de-4f0d-89f5-0d0b4d2cbb77"
+        ]
+    },
+    "a756ee2e-f1de-4f0d-89f5-0d0b4d2cbb77": {
+        "id": "a756ee2e-f1de-4f0d-89f5-0d0b4d2cbb77",
+        "class": "Sequence",
+        "name": "",
+        "options": {},
+        "asset-pack": "core",
+        "parent": "9509ad4e-468b-419c-9acd-d05dae067cd1",
+        "decorators": [
+            "f2df0839-fe9f-4ce5-8fe4-e96afef849e5"
+        ],
+        "children": [
+            "59090b48-ed73-41a1-b542-94de93e061cf",
+            "f51a2d55-378f-4ace-aca8-09c7d9a23f89"
+        ]
+    },
+    "f2df0839-fe9f-4ce5-8fe4-e96afef849e5": {
+        "id": "f2df0839-fe9f-4ce5-8fe4-e96afef849e5",
+        "class": "Case",
+        "name": "",
+        "options": {
+            "conditional": [
+                "() => {",
+                "    return notepad.getItem('listenTimeWhile');",
+                "}"
+            ]
+        },
+        "asset-pack": "core"
+    },
+    "59090b48-ed73-41a1-b542-94de93e061cf": {
+        "id": "59090b48-ed73-41a1-b542-94de93e061cf",
+        "class": "Sequence",
+        "name": "",
+        "options": {},
+        "asset-pack": "core",
+        "parent": "a756ee2e-f1de-4f0d-89f5-0d0b4d2cbb77",
+        "decorators": [
+            "1be5aa86-9d0c-499c-9011-ec2c72a56468"
+        ],
+        "children": [
+            "2b12f30e-83e0-4347-abf5-54d678235fe2",
+            "5d6b4eef-8d59-4994-a1db-7bc4fc2b9ca2"
+        ]
+    },
+    "1be5aa86-9d0c-499c-9011-ec2c72a56468": {
+        "id": "1be5aa86-9d0c-499c-9011-ec2c72a56468",
+        "class": "WhileCondition",
+        "name": "",
+        "options": {
+            "init": [
+                "() => {",
+                "}"
+            ],
+            "conditional": [
+                "() => {",
+                "    return notepad.getItem('listenTimeWhile');",
+                "}"
+            ]
+        },
+        "asset-pack": "core"
+    },
+    "2b12f30e-83e0-4347-abf5-54d678235fe2": {
+        "id": "2b12f30e-83e0-4347-abf5-54d678235fe2",
+        "class": "TextToSpeech",
+        "name": "",
+        "options": {
+            "words": "Sorry, I didn't understand that. Can you repeat the date?",
+            "onWord": [
+                "(word) => {",
+                "}"
+            ]
+        },
+        "asset-pack": "core",
+        "parent": "59090b48-ed73-41a1-b542-94de93e061cf"
+    },
+    "5d6b4eef-8d59-4994-a1db-7bc4fc2b9ca2": {
+        "id": "5d6b4eef-8d59-4994-a1db-7bc4fc2b9ca2",
+        "class": "Listen",
+        "name": "",
+        "options": {
+            "getOptions": [
+                "() => {",
+                "    let options = {",
+                "        heyJibo: false,",
+                "        detectEnd: false,",
+                "        incremental: false,",
+                "        authenticateSpeaker: ''",
+                "    }",
+                "    return options;",
+                "}"
+            ],
+            "rule": "listen-date.rule",
+            "onResult": [
+                "(listener) => {",
+                "    listener.on('cloud', function(asrResult, speakerIds) {",
+                "        //  Validate date",
+                "        var invalid = asrResult.NLParse.status === 'NO-PARSE';",
+                "        if (!invalid) {",
+                "            notepad.addItem({",
+                "                name: 'dateListen',",
+                "                item: asrResult.NLParse",
+                "            });",
+                "        }",
+                "        notepad.addItem({",
+                "            name: 'listenTimeWhile',",
+                "            item: invalid",
+                "        });",
+                "    });",
+                "}"
+            ]
+        },
+        "asset-pack": "core",
+        "parent": "59090b48-ed73-41a1-b542-94de93e061cf"
+    },
+    "f51a2d55-378f-4ace-aca8-09c7d9a23f89": {
+        "id": "f51a2d55-378f-4ace-aca8-09c7d9a23f89",
+        "class": "Null",
+        "name": "",
+        "options": {},
+        "asset-pack": "core",
+        "parent": "a756ee2e-f1de-4f0d-89f5-0d0b4d2cbb77",
+        "decorators": [
+            "2bcb7a67-30eb-4776-a137-b301efccb9d0"
+        ]
+    },
+    "2bcb7a67-30eb-4776-a137-b301efccb9d0": {
+        "id": "2bcb7a67-30eb-4776-a137-b301efccb9d0",
+        "class": "Case",
+        "name": "",
+        "options": {
+            "conditional": [
+                "() => {",
+                "    return false;",
+                "}"
+            ]
+        },
+        "asset-pack": "core"
+    }
+}

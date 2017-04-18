@@ -1,0 +1,138 @@
+{
+    "1": {
+        "id": 1,
+        "class": "Sequence",
+        "name": "",
+        "options": {},
+        "children": [
+            "b2efa44c-f63f-4dac-bfe0-0bf263130c94",
+            "88015f8d-5e4d-4eb4-8bae-ffc4df1273e0",
+            "c35a7681-8f4b-41ee-b708-e1e112c7cccb"
+        ]
+    },
+    "meta": {
+        "version": 1
+    },
+    "b2efa44c-f63f-4dac-bfe0-0bf263130c94": {
+        "id": "b2efa44c-f63f-4dac-bfe0-0bf263130c94",
+        "class": "Subtree",
+        "name": "",
+        "options": {
+            "behaviorPath": "listen-time.bt",
+            "getNotepad": [
+                "() => {",
+                "    return notepad;",
+                "}"
+            ],
+            "onResult": [
+                "(treeResult) => {",
+                "}"
+            ]
+        },
+        "asset-pack": "core",
+        "parent": 1
+    },
+    "88015f8d-5e4d-4eb4-8bae-ffc4df1273e0": {
+        "id": "88015f8d-5e4d-4eb4-8bae-ffc4df1273e0",
+        "class": "ExecuteScriptAsync",
+        "name": "",
+        "options": {
+            "exec": [
+                "(succeed, fail) => {",
+                "    if (notepad.getItem('dateListen')) {",
+                "        var EventDetailsListener = require('../listeners/event-details');",
+                "        var listener = new EventDetailsListener(blackboard, notepad);",
+                "        var speechResult = notepad.getItem('commandListen');",
+                "        speechResult.date = notepad.getItem('dateListen').date;",
+                "        speechResult.time = notepad.getItem('dateListen').time;",
+                "        listener.process(speechResult, succeed);",
+                "    } else {",
+                "        succeed();",
+                "    }",
+                "}"
+            ]
+        },
+        "asset-pack": "core",
+        "parent": 1
+    },
+    "c35a7681-8f4b-41ee-b708-e1e112c7cccb": {
+        "id": "c35a7681-8f4b-41ee-b708-e1e112c7cccb",
+        "class": "TextToSpeechJs",
+        "name": "",
+        "options": {
+            "getWords": [
+                "(callback) => {",
+                "    var moment = require('moment');",
+                "    var events = require('../src/core/event/event');",
+                "    var result = notepad.getFetchResult(events.DATABASE_FETCH);",
+                "    ",
+                "    var response = '';",
+                "    if (result.result.length === 0) {",
+                "        response += 'Couldn\\'t find event :(';",
+                "    } else {",
+                "        /*  Format:",
+                "         *  \"You have a [subtype] [type] (with [people]) (at [location]) at [time] (with a value of [value]).\"",
+                "         *  \"(The [subtype] was last taken on [lastTaken]).\"",
+                "         *  \"(Don't forget to bring [toBring]).\"",
+                "         *  \"(Here's your shopping list: [toPurchase]).\"",
+                "         *  \"(Details: [details]).\"",
+                "         */",
+                "        var event = result.result[0];",
+                "        response += 'You have a ' + event.subtype + ' ' + event.type;",
+                "        if (event.people) {",
+                "            response += ' with ';",
+                "            for (var i = 0; i < event.people.length; i++) {",
+                "                response += event.people[i];",
+                "                if (i < event.people.length - 1) {",
+                "                    response += ', ';",
+                "                }",
+                "            }",
+                "        }",
+                "        if (event.location) {",
+                "            response += ' at ' + event.location;",
+                "        }",
+                "        response += ' at ' + moment(parseInt(event.time)).format('hh:mm A');",
+                "        if (event.value) {",
+                "            response += ' with a value of ' + event.value;",
+                "        }",
+                "        response += '.';",
+                "        if (event.lastTaken) {",
+                "            response += ' The ' + event.subtype + ' was last taken on ' + moment(parseInt(event.lastTaken)).format() + '.';",
+                "        }",
+                "        if (event.toBring) {",
+                "            response += ' Don\\'t forget to bring ';",
+                "            for (var i = 0; i < event.toBring.length; i++) {",
+                "                response += event.toBring[i];",
+                "                if (i < event.toBring.length - 1) {",
+                "                    response += ', ';",
+                "                }",
+                "            }",
+                "            response += '.';",
+                "        }",
+                "        if (event.toPurchase) {",
+                "            response += ' Here\\'s your shopping list: ';",
+                "            for (var i = 0; i < event.toPurchase.length; i++) {",
+                "                response += event.toPurchase[i];",
+                "                if (i < event.toPurchase.length - 1) {",
+                "                    response += ', ';",
+                "                }",
+                "            }",
+                "            response += '.';",
+                "        }",
+                "        if (event.details) {",
+                "            response += ' Final details: ' + event.details + '.';",
+                "        }",
+                "    }",
+                "    ",
+                "    callback(response);",
+                "}"
+            ],
+            "onWord": [
+                "(word) => {",
+                "}"
+            ]
+        },
+        "asset-pack": "core",
+        "parent": 1
+    }
+}

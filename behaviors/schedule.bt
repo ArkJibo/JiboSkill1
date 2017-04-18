@@ -6,70 +6,12 @@
         "options": {},
         "children": [
             "6e813632-83ce-438b-b412-f690cd6ab7e2",
+            "33939c18-5b63-4623-90eb-a99cc0e50f9b",
             "741ac5d6-a479-48d2-b516-dc5a55bccdad"
         ]
     },
     "meta": {
         "version": 1
-    },
-    "d53b3c2b-1bad-4b89-9007-86d062ee7a30": {
-        "id": "d53b3c2b-1bad-4b89-9007-86d062ee7a30",
-        "class": "Sequence",
-        "name": "if date not understood",
-        "options": {},
-        "asset-pack": "core",
-        "parent": "6e813632-83ce-438b-b412-f690cd6ab7e2",
-        "children": [
-            "3853e68e-f372-4cce-a24a-19556e3b7149"
-        ],
-        "decorators": [
-            "dbaaaab8-2141-4e4e-b0be-00da991793d6"
-        ]
-    },
-    "c18f4e2c-c79b-4c76-ace2-3d20dcd252eb": {
-        "id": "c18f4e2c-c79b-4c76-ace2-3d20dcd252eb",
-        "class": "TextToSpeech",
-        "name": "",
-        "options": {
-            "words": "Sorry, I didn't understand that. Can you repeat the date?",
-            "onWord": [
-                "(word) => {",
-                "}"
-            ]
-        },
-        "asset-pack": "core",
-        "parent": "3853e68e-f372-4cce-a24a-19556e3b7149"
-    },
-    "9c030099-949b-4150-9d71-0ccd33ac048f": {
-        "id": "9c030099-949b-4150-9d71-0ccd33ac048f",
-        "class": "Listen",
-        "name": "",
-        "options": {
-            "getOptions": [
-                "() => {",
-                "    let options = {",
-                "        heyJibo: false,",
-                "        detectEnd: false,",
-                "        incremental: false,",
-                "        authenticateSpeaker: ''",
-                "    }",
-                "    return options;",
-                "}"
-            ],
-            "rule": "listen-date.rule",
-            "onResult": [
-                "(listener) => {",
-                "    listener.on('cloud', function(asrResult, speakerIds) {",
-                "        notepad.addItem({",
-                "            name: 'dateListen',",
-                "            item: asrResult.NLParse",
-                "        });",
-                "    });",
-                "}"
-            ]
-        },
-        "asset-pack": "core",
-        "parent": "3853e68e-f372-4cce-a24a-19556e3b7149"
     },
     "741ac5d6-a479-48d2-b516-dc5a55bccdad": {
         "id": "741ac5d6-a479-48d2-b516-dc5a55bccdad",
@@ -78,22 +20,22 @@
         "options": {
             "getWords": [
                 "(callback) => {",
-                "    let events = require('../src/core/event/event');",
-                "    let moment = require('moment');",
+                "    var events = require('../src/core/event/event');",
+                "    var moment = require('moment');",
                 "    ",
-                "    let results = notepad.getFetchResult(events.FETCH_SCHEDULE);",
-                "    let response = '';",
+                "    var results = notepad.getFetchResult(events.FETCH_SCHEDULE);",
+                "    var response = '';",
                 "    if (results.result.length === 0) {",
                 "        response += 'You have no events that day!';",
                 "    } else {",
-                "        let day = moment(parseInt(results.result[0].time));",
-                "        let monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August',",
+                "        var day = moment(parseInt(results.result[0].time));",
+                "        var monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August',",
                 "            'September', 'October', 'November', 'December'];",
                 "            ",
                 "        response += 'You have the following events for ';",
                 "        response += day.format('dddd') + ', ' + monthNames[day.format('M') - 1] + ' ' + day.format('D') + ': ';",
                 "        results.result.forEach((evt) => {",
-                "            let time = moment(parseInt(evt.time));",
+                "            var time = moment(parseInt(evt.time));",
                 "            response += evt.type + ' at ' + time.format('hh:mm a') + '. ';",
                 "        });",
                 "    }",
@@ -109,102 +51,44 @@
         "asset-pack": "core",
         "parent": 1
     },
-    "7c311055-70de-4b9f-a11e-fd1093b5ee72": {
-        "id": "7c311055-70de-4b9f-a11e-fd1093b5ee72",
+    "6e813632-83ce-438b-b412-f690cd6ab7e2": {
+        "id": "6e813632-83ce-438b-b412-f690cd6ab7e2",
+        "class": "Subtree",
+        "name": "",
+        "options": {
+            "behaviorPath": "listen-time.bt",
+            "getNotepad": [
+                "() => {",
+                "    return notepad;",
+                "}"
+            ],
+            "onResult": [
+                "(treeResult) => {",
+                "}"
+            ]
+        },
+        "asset-pack": "core",
+        "parent": 1,
+        "children": []
+    },
+    "33939c18-5b63-4623-90eb-a99cc0e50f9b": {
+        "id": "33939c18-5b63-4623-90eb-a99cc0e50f9b",
         "class": "ExecuteScriptAsync",
-        "name": "Fetch schedule",
+        "name": "",
         "options": {
             "exec": [
                 "(succeed, fail) => {",
-                "    let ScheduleListener = require('../listeners/schedule');",
-                "    let listener = new ScheduleListener(blackboard, notepad);",
-                "    listener.process(notepad.getItem('dateListen'), succeed);",
+                "    if (notepad.getItem('dateListen')) {",
+                "        var ScheduleListener = require('../listeners/schedule');",
+                "        var listener = new ScheduleListener(blackboard, notepad);",
+                "        listener.process(notepad.getItem('dateListen'), succeed);",
+                "    } else {",
+                "        succeed();",
+                "    }",
                 "}"
             ]
         },
         "asset-pack": "core",
-        "parent": "3853e68e-f372-4cce-a24a-19556e3b7149"
-    },
-    "6e813632-83ce-438b-b412-f690cd6ab7e2": {
-        "id": "6e813632-83ce-438b-b412-f690cd6ab7e2",
-        "class": "Switch",
-        "name": "",
-        "options": {},
-        "asset-pack": "core",
-        "parent": 1,
-        "children": [
-            "d53b3c2b-1bad-4b89-9007-86d062ee7a30",
-            "5664a2d3-81fa-4695-8b50-2885b765d60c"
-        ]
-    },
-    "dbaaaab8-2141-4e4e-b0be-00da991793d6": {
-        "id": "dbaaaab8-2141-4e4e-b0be-00da991793d6",
-        "class": "Case",
-        "name": "",
-        "options": {
-            "conditional": [
-                "() => {",
-                "    return notepad.getItem('scheduleWhile');",
-                "}"
-            ]
-        },
-        "asset-pack": "core"
-    },
-    "5664a2d3-81fa-4695-8b50-2885b765d60c": {
-        "id": "5664a2d3-81fa-4695-8b50-2885b765d60c",
-        "class": "Null",
-        "name": "",
-        "options": {},
-        "asset-pack": "core",
-        "parent": "6e813632-83ce-438b-b412-f690cd6ab7e2",
-        "decorators": [
-            "11ec2390-1859-4f82-83ce-83ee50f2571c"
-        ]
-    },
-    "11ec2390-1859-4f82-83ce-83ee50f2571c": {
-        "id": "11ec2390-1859-4f82-83ce-83ee50f2571c",
-        "class": "Case",
-        "name": "",
-        "options": {
-            "conditional": [
-                "() => {",
-                "    return false;",
-                "}"
-            ]
-        },
-        "asset-pack": "core"
-    },
-    "3853e68e-f372-4cce-a24a-19556e3b7149": {
-        "id": "3853e68e-f372-4cce-a24a-19556e3b7149",
-        "class": "Sequence",
-        "name": "while date not understood",
-        "options": {},
-        "asset-pack": "core",
-        "parent": "d53b3c2b-1bad-4b89-9007-86d062ee7a30",
-        "children": [
-            "c18f4e2c-c79b-4c76-ace2-3d20dcd252eb",
-            "9c030099-949b-4150-9d71-0ccd33ac048f",
-            "7c311055-70de-4b9f-a11e-fd1093b5ee72"
-        ],
-        "decorators": [
-            "84f671ec-d82f-408e-8993-2a21b6aa79ef"
-        ]
-    },
-    "84f671ec-d82f-408e-8993-2a21b6aa79ef": {
-        "id": "84f671ec-d82f-408e-8993-2a21b6aa79ef",
-        "class": "WhileCondition",
-        "name": "",
-        "options": {
-            "init": [
-                "() => {",
-                "}"
-            ],
-            "conditional": [
-                "() => {",
-                "    return notepad.getItem('scheduleWhile');",
-                "}"
-            ]
-        },
-        "asset-pack": "core"
+        "parent": 1
     }
 }
