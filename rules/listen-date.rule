@@ -1,3 +1,7 @@
 TopRule = $* (
-    $factory:date { date = date._date_nl }
+    $atTime     { time = atTime._time } { date = atTime._date } |
+    $onDate     { time = onDate._time } { date = onDate._date }
 ) $*;
+
+atTime = $* $factory:time       { _time = time._time_nl } { _date = '0d' };
+onDate = $* $factory:date       { _time = date._time_nl } { _date = date._date_nl };

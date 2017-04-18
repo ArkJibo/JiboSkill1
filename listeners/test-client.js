@@ -31,7 +31,7 @@ class TestClient {
         return self._testName.promise;
     }
 
-    runTest (asrResult) {
+    runTest (nlparse) {
         var self = this;
         this.total = 0;
         this.pass = 0;
@@ -40,7 +40,7 @@ class TestClient {
 
         //  Get the variables set by main.rule
         var dir = '';
-        switch (asrResult.type) {
+        switch (nlparse.type) {
             case 'unit':
                 dir = './test/unit/';
                 break;
@@ -57,7 +57,7 @@ class TestClient {
                 return;
         }
 
-        var alertMsg = ('Running ' + asrResult.type + ' tests in directory ' + dir);
+        var alertMsg = ('Running ' + nlparse.type + ' tests in directory ' + dir);
         status = {
             'status': true,
             'msg': alertMsg

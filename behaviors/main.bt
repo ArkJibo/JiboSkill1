@@ -195,7 +195,7 @@
     "1b613220-b75d-471d-958a-5738daee6227": {
         "id": "1b613220-b75d-471d-958a-5738daee6227",
         "class": "Listen",
-        "name": "",
+        "name": "Sets commandListen",
         "options": {
             "getOptions": [
                 "() => {",
@@ -232,7 +232,9 @@
         "parent": "d501889a-3359-4553-9daa-193ba3af1cf2",
         "children": [
             "0f070ddd-4ccd-4672-af01-6c800a351f31",
-            "bba0c15f-4ab4-4852-bee7-5c231b7422d4"
+            "bba0c15f-4ab4-4852-bee7-5c231b7422d4",
+            "5c0de2f2-8866-4ff4-922a-cdb698f387b2",
+            "538852b5-d112-48f7-96ad-d4edf602fa03"
         ]
     },
     "0f070ddd-4ccd-4672-af01-6c800a351f31": {
@@ -402,5 +404,81 @@
             "5e558a40-3185-4488-ad53-710ac9069487",
             "c39af355-6d9c-436c-96cf-835060384069"
         ]
+    },
+    "538852b5-d112-48f7-96ad-d4edf602fa03": {
+        "id": "538852b5-d112-48f7-96ad-d4edf602fa03",
+        "class": "Sequence",
+        "name": "Speech not understood",
+        "options": {},
+        "asset-pack": "core",
+        "parent": "0fd361b1-fddc-4a42-83cd-4a6149a0e259",
+        "decorators": [
+            "013a1880-cb99-4d1a-b24a-dbfc14a26cd6"
+        ],
+        "children": [
+            "7fb2a184-c782-478e-9351-b8dfbf27d31c"
+        ]
+    },
+    "013a1880-cb99-4d1a-b24a-dbfc14a26cd6": {
+        "id": "013a1880-cb99-4d1a-b24a-dbfc14a26cd6",
+        "class": "Case",
+        "name": "",
+        "options": {
+            "conditional": [
+                "() => {",
+                "    return notepad.getSwitchCondition('userCommandSwitch') === false;",
+                "}"
+            ]
+        },
+        "asset-pack": "core"
+    },
+    "7fb2a184-c782-478e-9351-b8dfbf27d31c": {
+        "id": "7fb2a184-c782-478e-9351-b8dfbf27d31c",
+        "class": "TextToSpeech",
+        "name": "",
+        "options": {
+            "words": "Sorry, I didn't catch that",
+            "onWord": [
+                "(word) => {",
+                "}"
+            ]
+        },
+        "asset-pack": "core",
+        "parent": "538852b5-d112-48f7-96ad-d4edf602fa03"
+    },
+    "5c0de2f2-8866-4ff4-922a-cdb698f387b2": {
+        "id": "5c0de2f2-8866-4ff4-922a-cdb698f387b2",
+        "class": "Subtree",
+        "name": "Event details subtree",
+        "options": {
+            "behaviorPath": "event-details.bt",
+            "getNotepad": [
+                "() => {",
+                "    return notepad;",
+                "}"
+            ],
+            "onResult": [
+                "(treeResult) => {",
+                "}"
+            ]
+        },
+        "asset-pack": "core",
+        "parent": "0fd361b1-fddc-4a42-83cd-4a6149a0e259",
+        "decorators": [
+            "4f793b40-9b7b-46ed-9413-1f1bd8942fdd"
+        ]
+    },
+    "4f793b40-9b7b-46ed-9413-1f1bd8942fdd": {
+        "id": "4f793b40-9b7b-46ed-9413-1f1bd8942fdd",
+        "class": "Case",
+        "name": "",
+        "options": {
+            "conditional": [
+                "() => {",
+                "    return notepad.getSwitchCondition('userCommandSwitch') === 'event-details';",
+                "}"
+            ]
+        },
+        "asset-pack": "core"
     }
 }

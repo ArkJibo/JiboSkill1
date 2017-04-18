@@ -1,12 +1,26 @@
 TopRule = $* (
-    $runTestsRules { action = 'testing' } { type = runTestsRules._type } |
-    $calendarRules { action = 'schedule' } { date = calendarRules._date }
-);
+    $runTestsRules      { action = 'testing' } { type = runTestsRules._type } |
+    $calendarRules      { action = 'schedule' } { date = calendarRules._date } |
+    $eventDetailRules   { action = 'event-details' } { type = eventDetailRules._type } { date = eventDetailRules._date } { time = eventDetailRules._time }
+) $*;
 
-runTestsRules = run $testType { _type = testType._type } [test?s];
-testType @= ($w) { _type = _parsed };
+#   Run unit tests or functional tests
+runTestsRules = run $getWord { _type = getWord._word } [test?s];
 
+#   Get my schedule for some date
 calendarRules = my (schedule|calendar) $* (
-    $factory:date { _date = date._date_nl } |
-    $* { _date = 'NO-PARSE' }
+    $factory:date   { _date = date._date_nl } |
+    $*              { _date = 'NO-PARSE' }
 );
+
+#   Get details of some event type at some time
+eventDetailRules = details of my $getWord { _type = getWord._word } (
+    $atTime     { _time = atTime._time } { _date = atTime._date } |
+    $onDate     { _time = onDate._time } { _date = onDate._date } |
+    $*          { _time = 'NO-PARSE' } { _date = 'NO-PARSE' }
+);
+atTime = $* $factory:time       { _time = time._time_nl } { _date = '0d' };
+onDate = $* $factory:date       { _time = date._time_nl } { _date = date._date_nl };
+
+#   Get the next word spoken by user
+getWord @= ($w) { _word = _parsed };

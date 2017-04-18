@@ -370,7 +370,7 @@ describe('Controller', function () {
         it('should trigger listener and receive callback', function (done) {
             eventBus.emitEvent(events.DATABASE_FETCH, {
                 type: 'inventory',
-                fetchParams: {},
+                params: {},
                 _cb: function (err, docs) {
                     expect(err).to.not.exist;
                     expect(docs.length).to.equal(0);

@@ -1,28 +1,34 @@
 'use strict';
 
+var Listener = require('./listener');
 var TestClient = require('./test-client');
+var ScheduleListener = require('./schedule');
+var EventDetailsListener = require('./event-details');
 
-class MainListener {
+class MainListener extends Listener {
 
     constructor (blackboard, notepad) {
-        var self = this;
-        self.notepad = notepad;
-        self.blackboard = blackboard;
+        super(blackboard, notepad);
     }
 
     /**
-     * @param asrResult Contains the result of the voice interpretation
+     * @param nlparse Contains the result of the voice interpretation
      * @param cb Callback
      */
-    process (asrResult, cb) {
+    process (nlparse, cb) {
         var self = this;
 
+        if (nlparse.status === 'NO-PARSE') {
+            cb();
+            return;
+        }
+
         //  Get the variables set by main.rule
-        switch (asrResult.action) {
+        switch (nlparse.action) {
             case 'testing':
                 //  Call listener for handling testing
                 var testClient = new TestClient();
-                testClient.runTest(asrResult);
+                testClient.runTest(nlparse);
                 testClient.getTestName().done(
                     function (name) {
                         if (name.status) {
@@ -40,13 +46,16 @@ class MainListener {
                         }
                     }
                 );
-
                 break;
 
             case 'schedule':
-                var ScheduleListener = require('./schedule');
                 var scheduleListener = new ScheduleListener(self.blackboard, self.notepad);
-                scheduleListener.process(asrResult, cb);
+                scheduleListener.process(nlparse, cb);
+                break;
+
+            case 'event-details':
+                var evtDetailsListener = new EventDetailsListener(self.blackboard, self.notepad);
+                evtDetailsListener.process(nlparse, cb);
                 break;
         }
     }

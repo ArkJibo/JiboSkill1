@@ -385,7 +385,7 @@ class Controller {
     _fetchFromDatabase (params, cb) {
         var self = this;
 
-        self._model.getMatchingCollectionDocs(params.type, params.fetchParams, cb);
+        self._model.getMatchingCollectionDocs(params.type, params.params, cb);
     }
 
     /**
