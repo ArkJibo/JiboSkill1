@@ -22,6 +22,7 @@
         "no-use-before-define":         ["error"],
         "no-undef":                     ["error"],
         "no-unused-vars":               ["error"],
-        "strict":                       ["error"]
+        "strict":                       ["error"],
+        "eol-last":                     ["error", "always"]
     }
 }

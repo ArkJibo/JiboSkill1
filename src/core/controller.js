@@ -9,6 +9,7 @@ var _ = require('lodash');
 var config = require('../../config/default');
 var async = require('async');
 var moment = require('moment');
+var request = require('request');
 
 class Controller {
 
@@ -28,6 +29,7 @@ class Controller {
         self._eventBus.addEventListener(events.FETCH_SCHEDULE, self, self._fetchSchedule);
         self._eventBus.addEventListener(events.STIMULATE_MEMORY, self, self._stimulateMemory);
         self._eventBus.addEventListener(events.FETCH_NEXT_REMINDER, self, self._fetchNextReminder);
+        self._eventBus.addEventListener(events.ASK_JEEVES, self, self._askJeeves);
         self._eventBus.addEventListener(events.FILL_REMINDER_QUEUE, self, self._fillReminderQueue);
         self._eventBus.addEventListener(events.FLAG_REMINDER, self, self._flagReminder);
         self._eventBus.addEventListener(events.UNKNOWN_USER_INPUT, self, self._unknownUserInput);
@@ -344,6 +346,33 @@ class Controller {
         var cb = arguments[1];
 
         self._model.getNextReminder(cb);
+    }
+
+    /**
+     * Ask our AI bot for interpretation
+     * @param params Params containing text
+     * @param cb Callback
+     */
+    _askJeeves (params, cb) {
+        request.post({
+            url: util.apiAi.url,
+            body: JSON.stringify({
+                query: params.text,
+                lang: 'en',
+                sessionId: 'garbageFire'
+            }),
+            headers: {
+                'Authorization': 'Bearer ' + util.apiAi.accessToken,
+                'Content-Type': 'application/json'
+            }
+        }, function (err, res, body) {
+            if (err) {
+                cb(err);
+            } else {
+                //  Do something cool with the result
+                cb(null, body);
+            }
+        });
     }
 
     /**

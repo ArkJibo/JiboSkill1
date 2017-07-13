@@ -7,6 +7,7 @@ module.exports = {
     ENTERTAIN: 'entertain',
     STIMULATE_MEMORY: 'stimulate-memory',
     FETCH_NEXT_REMINDER: 'fetch-next-reminder',
+    ASK_JEEVES: 'ask-jeeves',
     FILL_REMINDER_QUEUE: 'fill-reminder-queue',
     FLAG_REMINDER: 'flag-reminder',
     UNKNOWN_USER_INPUT: 'unknown-input',
