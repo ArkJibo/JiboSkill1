@@ -28,16 +28,15 @@ class ScheduleListener extends Listener {
             //  Fetch the schedule for that date
             var momentDate = self.getDateFromSpeech(nlparse.date);
             self.blackboard.eventBus.emitEvent(events.FETCH_SCHEDULE, {
-                date: momentDate,
-                _cb: function (err, schedule) {
-                    //  Post results to notepad
-                    self.notepad.addFetchResult(events.FETCH_SCHEDULE, err, schedule);
-                    self.notepad.addItem({
-                        name: 'listenTimeWhile',
-                        item: false
-                    });
-                    cb();
-                }
+                date: momentDate
+            }, function (err, schedule) {
+                //  Post results to notepad
+                self.notepad.addFetchResult(events.FETCH_SCHEDULE, err, schedule);
+                self.notepad.addItem({
+                    name: 'listenTimeWhile',
+                    item: false
+                });
+                cb();
             });
         }
     }

@@ -31,9 +31,8 @@ jibo.init('face', function (err) {
                 eventBus.emitEvent(events.DATABASE_ADD, {
                     type: util.COLLECTION_TYPE.EVENTS,
                     subtype: 'default',
-                    doc: _.cloneDeep(evt),
-                    _cb: cb
-                });
+                    doc: _.cloneDeep(evt)
+                }, cb);
             });
         });
         async.parallel(funcs, function (err) {

@@ -106,23 +106,22 @@ describe('Controller', function () {
                             '"password": "HACKED"' +
                         '}' +
                     '}' +
-                '}',
-                _cb: function (err, docs) {
-                    expect(err).to.not.exist;
-                    expect(docs.length).to.equal(4);
-                    expect(docs[0].add[0].type).to.equal('filler');
-                    expect(docs[0].add[0].subtype).to.equal('filler');
-                    expect(docs[0].add[0].value).to.equal('filler');
-                    expect(docs[1].add[0].type).to.equal('more filler');
-                    expect(docs[1].add[0].name).to.equal('more filler');
-                    expect(docs[1].add[0].amount).to.equal('more filler');
-                    expect(docs[2].remove).to.equal(1);
-                    expect(docs[3].modify).to.equal(2);
+                '}'
+            }, function (err, docs) {
+                expect(err).to.not.exist;
+                expect(docs.length).to.equal(4);
+                expect(docs[0].add[0].type).to.equal('filler');
+                expect(docs[0].add[0].subtype).to.equal('filler');
+                expect(docs[0].add[0].value).to.equal('filler');
+                expect(docs[1].add[0].type).to.equal('more filler');
+                expect(docs[1].add[0].name).to.equal('more filler');
+                expect(docs[1].add[0].amount).to.equal('more filler');
+                expect(docs[2].remove).to.equal(1);
+                expect(docs[3].modify).to.equal(2);
 
-                    flags[1] = true;
-                    if (flags[0] && flags[1]) {
-                        done();
-                    }
+                flags[1] = true;
+                if (flags[0] && flags[1]) {
+                    done();
                 }
             });
         });
@@ -146,15 +145,14 @@ describe('Controller', function () {
                 subject: '[' + util.EMAIL_DB_UPDATE_TAG + '] Awesome Update',
                 body: '{' +
                     '"PasSword": "wrong password"' +
-                '}',
-                _cb: function (err, docs) {
-                    expect(err).to.equal('Incorrect password');
-                    expect(docs).to.not.exist;
+                '}'
+            }, function (err, docs) {
+                expect(err).to.equal('Incorrect password');
+                expect(docs).to.not.exist;
 
-                    flags[1] = true;
-                    if (flags[0] && flags[1]) {
-                        done();
-                    }
+                flags[1] = true;
+                if (flags[0] && flags[1]) {
+                    done();
                 }
             });
         });
@@ -166,12 +164,11 @@ describe('Controller', function () {
                 fromLastName: 'Trump',
                 subject: 'Everything is just fantastic',
                 body: 'Absolutely fantastic',
-                date: presentTime.format('x'),
-                _cb: function (err, docs) {
-                    expect(err).to.not.exist;
-                    expect(docs[0].fromEmail).to.equal('random@gmail.com');
-                    done();
-                }
+                date: presentTime.format('x')
+            }, function (err, docs) {
+                expect(err).to.not.exist;
+                expect(docs[0].fromEmail).to.equal('random@gmail.com');
+                done();
             });
         });
     });
@@ -179,12 +176,11 @@ describe('Controller', function () {
     describe('#_fetchSchedule()', function () {
         it('should get schedule from model and cb', function (done) {
             eventBus.emitEvent(events.FETCH_SCHEDULE, {
-                day: presentTime,
-                _cb: function (err, docs) {
-                    expect(err).to.not.exist;
-                    expect(docs.length).to.equal(0);
-                    done();
-                }
+                day: presentTime
+            }, function (err, docs) {
+                expect(err).to.not.exist;
+                expect(docs.length).to.equal(0);
+                done();
             });
         });
     });
@@ -205,25 +201,23 @@ describe('Controller', function () {
                 expect(err).to.not.exist;
 
                 eventBus.emitEvent(events.STIMULATE_MEMORY, {
-                    type: util.MEM_STIMULANT.MEDIA,
-                    _cb: function (err, docs) {
-                        expect(err).to.not.exist;
-                        expect(docs.type).to.equal('photo');
-                        expect(docs.timesViewed).to.equal(1);
-                        done();
-                    }
+                    type: util.MEM_STIMULANT.MEDIA
+                }, function (err, docs) {
+                    expect(err).to.not.exist;
+                    expect(docs.type).to.equal('photo');
+                    expect(docs.timesViewed).to.equal(1);
+                    done();
                 });
             });
         });
 
         it('should be ok if no media available', function (done) {
             eventBus.emitEvent(events.STIMULATE_MEMORY, {
-                type: util.MEM_STIMULANT.MEDIA,
-                _cb: function (err, docs) {
-                    expect(err).to.not.exist;
-                    expect(docs).to.not.exist;
-                    done();
-                }
+                type: util.MEM_STIMULANT.MEDIA
+            }, function (err, docs) {
+                expect(err).to.not.exist;
+                expect(docs).to.not.exist;
+                done();
             });
         });
 
@@ -251,22 +245,21 @@ describe('Controller', function () {
                 expect(err).to.not.exist;
 
                 eventBus.emitEvent(events.STIMULATE_MEMORY, {
-                    type: util.MEM_STIMULANT.TRIVIA,
-                    _cb: function (err, trivia) {
-                        expect(err).to.not.exist;
+                    type: util.MEM_STIMULANT.TRIVIA
+                }, function (err, trivia) {
+                    expect(err).to.not.exist;
 
-                        if (trivia.question.includes('first name?')) {
-                            expect(['Bob', 'Sally']).to.include(trivia.answer);
-                        } else if (trivia.question.includes('last name?')) {
-                            expect(['Marley', 'Chen']).to.include(trivia.answer);
-                        } else if (trivia.question.includes('your relationship with')) {
-                            expect(['friend', 'sister-in-law']).to.include(trivia.answer);
-                        } else {
-                            expect(trivia.answer).to.equal(presentTime.format('x'));
-                        }
-
-                        done();
+                    if (trivia.question.includes('first name?')) {
+                        expect(['Bob', 'Sally']).to.include(trivia.answer);
+                    } else if (trivia.question.includes('last name?')) {
+                        expect(['Marley', 'Chen']).to.include(trivia.answer);
+                    } else if (trivia.question.includes('your relationship with')) {
+                        expect(['friend', 'sister-in-law']).to.include(trivia.answer);
+                    } else {
+                        expect(trivia.answer).to.equal(presentTime.format('x'));
                     }
+
+                    done();
                 });
             });
         });
@@ -295,22 +288,21 @@ describe('Controller', function () {
                 expect(err).to.not.exist;
 
                 eventBus.emitEvent(events.STIMULATE_MEMORY, {
-                    type: util.MEM_STIMULANT.TRIVIA,
-                    _cb: function (err, trivia) {
-                        expect(err).to.not.exist;
+                    type: util.MEM_STIMULANT.TRIVIA
+                }, function (err, trivia) {
+                    expect(err).to.not.exist;
 
-                        if (trivia.question.includes('first name?')) {
-                            expect(['Bob', 'Joe', 'Sally']).to.include(trivia.answer);
-                        } else if (trivia.question.includes('last name?')) {
-                            expect(['Marley', 'Campbell', 'Chen']).to.include(trivia.answer);
-                        } else if (trivia.question.includes('your relationship with')) {
-                            expect(['friend', 'advisor', 'sister-in-law']).to.include(trivia.answer);
-                        } else {
-                            expect(trivia.answer).to.equal(presentTime.format('x'));
-                        }
-
-                        done();
+                    if (trivia.question.includes('first name?')) {
+                        expect(['Bob', 'Joe', 'Sally']).to.include(trivia.answer);
+                    } else if (trivia.question.includes('last name?')) {
+                        expect(['Marley', 'Campbell', 'Chen']).to.include(trivia.answer);
+                    } else if (trivia.question.includes('your relationship with')) {
+                        expect(['friend', 'advisor', 'sister-in-law']).to.include(trivia.answer);
+                    } else {
+                        expect(trivia.answer).to.equal(presentTime.format('x'));
                     }
+
+                    done();
                 });
             });
         });
@@ -318,25 +310,21 @@ describe('Controller', function () {
 
     describe('#_fetchNextReminder()', function () {
         it('should pass on the call to model', function (done) {
-            eventBus.emitEvent(events.FETCH_NEXT_REMINDER, {
-                _cb: function (err, reminder) {
-                    expect(err).to.not.exist;
-                    expect(reminder).to.be.null;
-                    done();
-                }
+            eventBus.emitEvent(events.FETCH_NEXT_REMINDER, {}, function (err, reminder) {
+                expect(err).to.not.exist;
+                expect(reminder).to.be.null;
+                done();
             });
         });
     });
 
     describe('#_fillReminderQueue()', function () {
         it('should pass on the call to model', function (done) {
-            eventBus.emitEvent(events.FILL_REMINDER_QUEUE, {
-                _cb: function (err, docs) {
-                    expect(err).to.not.exist;
-                    expect(docs.length).to.equal(1);
-                    expect(docs[0].length).to.equal(0);
-                    done();
-                }
+            eventBus.emitEvent(events.FILL_REMINDER_QUEUE, {}, function (err, docs) {
+                expect(err).to.not.exist;
+                expect(docs.length).to.equal(1);
+                expect(docs[0].length).to.equal(0);
+                done();
             });
         });
     });
@@ -344,12 +332,11 @@ describe('Controller', function () {
     describe('#_flagReminder()', function () {
         it('should pass on the call to model', function (done) {
             eventBus.emitEvent(events.FLAG_REMINDER, {
-                id: 'RANDOMID',
-                _cb: function (err, docs) {
-                    expect(err).to.equal(errors.INVALID_DOC_ID);
-                    expect(docs).to.not.exist;
-                    done();
-                }
+                id: 'RANDOMID'
+            }, function (err, docs) {
+                expect(err).to.equal(errors.INVALID_DOC_ID);
+                expect(docs).to.not.exist;
+                done();
             });
         });
     });
@@ -359,10 +346,7 @@ describe('Controller', function () {
             eventBus.emitEvent(events.UNKNOWN_USER_INPUT, {
                 input: 'I said something super confusing',
                 date: presentTime.format('x'),
-                _cb: function () {
-                    done();
-                }
-            });
+            }, done);
         });
     });
 
@@ -370,12 +354,11 @@ describe('Controller', function () {
         it('should trigger listener and receive callback', function (done) {
             eventBus.emitEvent(events.DATABASE_FETCH, {
                 type: 'inventory',
-                params: {},
-                _cb: function (err, docs) {
-                    expect(err).to.not.exist;
-                    expect(docs.length).to.equal(0);
-                    done();
-                }
+                params: {}
+            }, function (err, docs) {
+                expect(err).to.not.exist;
+                expect(docs.length).to.equal(0);
+                done();
             });
         });
     });
@@ -385,12 +368,11 @@ describe('Controller', function () {
             eventBus.emitEvent(events.DATABASE_UPDATE, {
                 type: util.COLLECTION_TYPE.EVENTS,
                 params: {},
-                updates: {},
-                _cb: function (err, docs) {
-                    expect(err).to.not.exist;
-                    expect(docs).to.equal(0);
-                    done();
-                }
+                updates: {}
+            }, function (err, docs) {
+                expect(err).to.not.exist;
+                expect(docs).to.equal(0);
+                done();
             });
         });
     });
@@ -404,12 +386,11 @@ describe('Controller', function () {
                     type: 'electronics',
                     name: 'headphones',
                     amount: '100'
-                },
-                _cb: function (err, docs) {
-                    expect(err).to.not.exist;
-                    expect(docs.length).to.equal(1);
-                    done();
                 }
+            }, function (err, docs) {
+                expect(err).to.not.exist;
+                expect(docs.length).to.equal(1);
+                done();
             });
         });
     });
@@ -418,12 +399,11 @@ describe('Controller', function () {
         it('should trigger listener and receive callback', function (done) {
             eventBus.emitEvent(events.DATABASE_REMOVE, {
                 type: util.COLLECTION_TYPE.INVENTORY,
-                params: {},
-                _cb: function (err, numRemoved) {
-                    expect(err).to.not.exist;
-                    expect(numRemoved).to.equal(0);
-                    done();
-                }
+                params: {}
+            }, function (err, numRemoved) {
+                expect(err).to.not.exist;
+                expect(numRemoved).to.equal(0);
+                done();
             });
         });
     });

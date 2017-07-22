@@ -57,16 +57,15 @@ class EventDetailsListener extends Listener {
             //  Fetch the event
             self.blackboard.eventBus.emitEvent(events.DATABASE_FETCH, {
                 type: util.COLLECTION_TYPE.EVENTS,
-                params: searchParams,
-                _cb: function (err, event) {
-                    //  Post results to notepad
-                    self.notepad.addFetchResult(events.DATABASE_FETCH, err, event);
-                    self.notepad.addItem({
-                        name: 'listenTimeWhile',
-                        item: false
-                    });
-                    cb();
-                }
+                params: searchParams
+            }, function (err, event) {
+                //  Post results to notepad
+                self.notepad.addFetchResult(events.DATABASE_FETCH, err, event);
+                self.notepad.addItem({
+                    name: 'listenTimeWhile',
+                    item: false
+                });
+                cb();
             });
         }
     }

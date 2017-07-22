@@ -33,7 +33,7 @@ util.MEM_STIMULANT = {
 };
 
 util.apiAi = {
-    accessToken: '794fe25c72d340588cee0ea161130566',
+    accessToken: '1e1cdd7dc96e4fa6bc4acafff21901fc',
     url: 'https://api.api.ai/v1/query'
 };
 
