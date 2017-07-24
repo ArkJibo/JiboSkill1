@@ -32,4 +32,9 @@ util.MEM_STIMULANT = {
     TRIVIA: 'trivia'
 };
 
+util.apiAi = {
+    accessToken: '1e1cdd7dc96e4fa6bc4acafff21901fc',
+    url: 'https://api.api.ai/v1/query'
+};
+
 module.exports = util;

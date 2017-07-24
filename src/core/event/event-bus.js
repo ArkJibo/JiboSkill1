@@ -88,10 +88,11 @@ class EventBus extends EventEmitter {
      * Fires the event with specified params
      * @param event String value of the event
      * @param params JS object with event params
+     * @param cb Callback for returning data to caller
      */
-    emitEvent (event, params) {
+    emitEvent (event, params, cb) {
         var self = this;
-        self.emit(event, params, params._cb);
+        self.emit(event, params, cb);
     }
 
     /**

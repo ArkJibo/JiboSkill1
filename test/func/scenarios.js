@@ -28,9 +28,8 @@ var addCalendarEvents = function (eventBus, cb) {
             eventBus.emitEvent(events.DATABASE_ADD, {
                 type: util.COLLECTION_TYPE.EVENTS,
                 subtype: 'default',
-                doc: _.cloneDeep(evt),
-                _cb: cb
-            });
+                doc: _.cloneDeep(evt)
+            }, cb);
         });
     });
 
@@ -63,121 +62,109 @@ describe('Scenario Based Functional Tests', function () {
         it('should have created correct reminders', function (done) {
             var dayStart = moment().startOf('day');
 
-            eventBus.emitEvent(events.FILL_REMINDER_QUEUE, {
-                _cb: function (err, docs) {
-                    expect(err).to.not.exist;
-                    expect(docs.length).to.equal(16);
+            eventBus.emitEvent(events.FILL_REMINDER_QUEUE, {}, function (err, docs) {
+                expect(err).to.not.exist;
+                expect(docs.length).to.equal(16);
 
-                    var expectedTimes = [
-                        moment(dayStart).add(8, 'hours').format('x'),
-                        moment(dayStart).add(9, 'hours').format('x'),
-                        moment(dayStart).add(9, 'hours').format('x'),
-                        moment(dayStart).add(9, 'hours').add(20, 'minutes').format('x'),
-                        moment(dayStart).add(9, 'hours').add(40, 'minutes').format('x'),
-                        moment(dayStart).add(10, 'hours').format('x'),
-                        moment(dayStart).add(11, 'hours').format('x'),
-                        moment(dayStart).add(13, 'hours').format('x'),
-                        moment(dayStart).add(13, 'hours').add(30, 'minutes').format('x'),
-                        moment(dayStart).add(14, 'hours').format('x'),
-                        moment(dayStart).add(14, 'hours').format('x'),
-                        moment(dayStart).add(14, 'hours').add(15, 'minutes').format('x'),
-                        moment(dayStart).add(14, 'hours').add(30, 'minutes').format('x'),
-                        moment(dayStart).add(14, 'hours').add(30, 'minutes').format('x'),
-                        moment(dayStart).add(15, 'hours').format('x'),
-                        moment(dayStart).add(15, 'hours').add(30, 'minutes').format('x')
-                    ];
+                var expectedTimes = [
+                    moment(dayStart).add(8, 'hours').format('x'),
+                    moment(dayStart).add(9, 'hours').format('x'),
+                    moment(dayStart).add(9, 'hours').format('x'),
+                    moment(dayStart).add(9, 'hours').add(20, 'minutes').format('x'),
+                    moment(dayStart).add(9, 'hours').add(40, 'minutes').format('x'),
+                    moment(dayStart).add(10, 'hours').format('x'),
+                    moment(dayStart).add(11, 'hours').format('x'),
+                    moment(dayStart).add(13, 'hours').format('x'),
+                    moment(dayStart).add(13, 'hours').add(30, 'minutes').format('x'),
+                    moment(dayStart).add(14, 'hours').format('x'),
+                    moment(dayStart).add(14, 'hours').format('x'),
+                    moment(dayStart).add(14, 'hours').add(15, 'minutes').format('x'),
+                    moment(dayStart).add(14, 'hours').add(30, 'minutes').format('x'),
+                    moment(dayStart).add(14, 'hours').add(30, 'minutes').format('x'),
+                    moment(dayStart).add(15, 'hours').format('x'),
+                    moment(dayStart).add(15, 'hours').add(30, 'minutes').format('x')
+                ];
 
-                    //  Emits get next reminder event
-                    var emit = function (i, cb) {
-                        eventBus.emitEvent(events.FETCH_NEXT_REMINDER, {
-                            _cb: function (err, reminder) {
+                //  Emits get next reminder event
+                var emit = function (i, cb) {
+                    eventBus.emitEvent(events.FETCH_NEXT_REMINDER, {}, function (err, reminder) {
+                        expect(err).to.not.exist;
+
+                        if (i >= docs.length) {
+                            //  Just to make sure all reminders get flagged
+                            expect(reminder).to.be.null;
+                            cb();
+                        } else {
+                            expect(reminder.time).to.equal(expectedTimes[i]);
+
+                            //  Set reminder as viewed
+                            eventBus.emitEvent(events.FLAG_REMINDER, {
+                                id: reminder._id
+                            }, function (err) {
                                 expect(err).to.not.exist;
-
-                                if (i >= docs.length) {
-                                    //  Just to make sure all reminders get flagged
-                                    expect(reminder).to.be.null;
-                                    cb();
-                                } else {
-                                    expect(reminder.time).to.equal(expectedTimes[i]);
-
-                                    //  Set reminder as viewed
-                                    eventBus.emitEvent(events.FLAG_REMINDER, {
-                                        id: reminder._id,
-                                        _cb: function (err) {
-                                            expect(err).to.not.exist;
-                                            cb();
-                                        }
-                                    });
-                                }
-                            }
-                        });
-                    };
-
-                    //  getNextReminder should return reminders in correct order
-                    var funcs = [];
-                    for (var i = 0; i < docs.length + 1; i++) {
-                        funcs.push(emit.bind(null, i));
-                    }
-
-                    async.series(funcs, function () {
-                        done();
+                                cb();
+                            });
+                        }
                     });
+                };
+
+                //  getNextReminder should return reminders in correct order
+                var funcs = [];
+                for (var i = 0; i < docs.length + 1; i++) {
+                    funcs.push(emit.bind(null, i));
                 }
+
+                async.series(funcs, function () {
+                    done();
+                });
             });
         });
 
         it('should correctly repeat reminders that are not flagged', function (done) {
-            eventBus.emitEvent(events.FILL_REMINDER_QUEUE, {
-                _cb: function (err, docs) {
+            eventBus.emitEvent(events.FILL_REMINDER_QUEUE, {}, function (err, docs) {
+                expect(err).to.not.exist;
+                expect(docs.length).to.equal(16);
+
+                //  Get first reminder for comparison
+                eventBus.emitEvent(events.FETCH_NEXT_REMINDER, {}, function (err, reminder) {
                     expect(err).to.not.exist;
-                    expect(docs.length).to.equal(16);
 
-                    //  Get first reminder for comparison
-                    eventBus.emitEvent(events.FETCH_NEXT_REMINDER, {
-                        _cb: function (err, reminder) {
+                    var currReminder = reminder;
+                    var flagged = false;
+
+                    // Get reminders until no more
+                    async.forever(function (next) {
+                        //  Keep getting next reminder
+                        eventBus.emitEvent(events.FETCH_NEXT_REMINDER, {}, function (err, reminder) {
                             expect(err).to.not.exist;
+                            if (!reminder) {
+                                //  Out of reminders, end the loop
+                                next('all done');
+                            } else {
+                                currReminder = flagged ? reminder : currReminder;
+                                expect(reminder).to.eql(currReminder);
 
-                            var currReminder = reminder;
-                            var flagged = false;
-
-                            // Get reminders until no more
-                            async.forever(function (next) {
-                                //  Keep getting next reminder
-                                eventBus.emitEvent(events.FETCH_NEXT_REMINDER, {
-                                    _cb: function (err, reminder) {
+                                //  50/50 chance to flag reminder
+                                if (Math.random() >= 0.5) {
+                                    //  Flag it
+                                    flagged = true;
+                                    eventBus.emitEvent(events.FLAG_REMINDER, {
+                                        id: reminder._id
+                                    }, function (err) {
                                         expect(err).to.not.exist;
-                                        if (!reminder) {
-                                            //  Out of reminders, end the loop
-                                            next('all done');
-                                        } else {
-                                            currReminder = flagged ? reminder : currReminder;
-                                            expect(reminder).to.eql(currReminder);
-
-                                            //  50/50 chance to flag reminder
-                                            if (Math.random() >= 0.5) {
-                                                //  Flag it
-                                                flagged = true;
-                                                eventBus.emitEvent(events.FLAG_REMINDER, {
-                                                    id: reminder._id,
-                                                    _cb: function (err) {
-                                                        expect(err).to.not.exist;
-                                                        next();
-                                                    }
-                                                });
-                                            } else {
-                                                flagged = false;
-                                                next();
-                                            }
-                                        }
-                                    }
-                                });
-                            }, function () {
-                                //  No more reminders
-                                done();
-                            });
-                        }
+                                        next();
+                                    });
+                                } else {
+                                    flagged = false;
+                                    next();
+                                }
+                            }
+                        });
+                    }, function () {
+                        //  No more reminders
+                        done();
                     });
-                }
+                });
             });
         });
     });
@@ -189,32 +176,30 @@ describe('Scenario Based Functional Tests', function () {
 
         it('should get correct schedule for today', function (done) {
             eventBus.emitEvent(events.FETCH_SCHEDULE, {
-                date: moment(),
-                _cb: function (err, docs) {
-                    expect(err).to.not.exist;
-                    expect(docs.length).to.equal(4);
-                    expect(docs[0].type).to.equal('meal');
-                    expect(docs[1].type).to.equal('appointment');
-                    expect(docs[2].type).to.equal('exercise');
-                    expect(docs[3].type).to.equal('medication');
-                    done();
-                }
+                date: moment()
+            }, function (err, docs) {
+                expect(err).to.not.exist;
+                expect(docs.length).to.equal(4);
+                expect(docs[0].type).to.equal('meal');
+                expect(docs[1].type).to.equal('appointment');
+                expect(docs[2].type).to.equal('exercise');
+                expect(docs[3].type).to.equal('medication');
+                done();
             });
         });
 
         it('should get correct schedule for future', function (done) {
             eventBus.emitEvent(events.FETCH_SCHEDULE, {
-                date: moment().add(2, 'days'),
-                _cb: function (err, docs) {
-                    expect(err).to.not.exist;
-                    expect(docs.length).to.equal(5);
-                    expect(docs[0].type).to.equal('exercise');
-                    expect(docs[1].type).to.equal('meal');
-                    expect(docs[2].type).to.equal('bill');
-                    expect(docs[3].type).to.equal('exercise');
-                    expect(docs[4].type).to.equal('medication');
-                    done();
-                }
+                date: moment().add(2, 'days')
+            }, function (err, docs) {
+                expect(err).to.not.exist;
+                expect(docs.length).to.equal(5);
+                expect(docs[0].type).to.equal('exercise');
+                expect(docs[1].type).to.equal('meal');
+                expect(docs[2].type).to.equal('bill');
+                expect(docs[3].type).to.equal('exercise');
+                expect(docs[4].type).to.equal('medication');
+                done();
             });
         });
     });
