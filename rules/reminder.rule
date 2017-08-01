@@ -1,0 +1,3 @@
+TopRule = (
+    ok { confirm='pass'} | no { confirm='fail'}
+);
