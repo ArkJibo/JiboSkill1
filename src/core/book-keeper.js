@@ -21,7 +21,7 @@ class BookKeeper {
                 var now = date.getTime();
 
                 // add field 'itemType' to JSON data object
-                if(data.time < now) {
+                if (data.time < now) {
                     data.itemType = 'reminder';
                     eventBus.emitJiboEvent('INTERRUPT_IDLE', data);
                 }
