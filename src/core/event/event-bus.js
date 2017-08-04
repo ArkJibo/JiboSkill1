@@ -92,11 +92,8 @@ class EventBus extends EventEmitter {
      */
     emitEvent (event, params, cb) {
         var self = this;
-        if (typeof cb === 'function') {
-            self.emit(event, params, cb);
-        } else {
-            console.log('cb passed to emitEvent not a function');
-        }
+        self.emit(event, params, cb);
+
     }
 
     /**

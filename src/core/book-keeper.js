@@ -1,7 +1,7 @@
 'use strict';
 
 var events = require('./event/event');
-var interval = require('../../config/default');
+var config = require('../../config/default');
 
 class BookKeeper {
     constructor (eventBus) {
@@ -12,7 +12,7 @@ class BookKeeper {
 
         setInterval(function () {
             eventBus.emitEvent(events.FETCH_NEXT_REMINDER, {}, function (err, data) {
-                if(err) {
+                if (err) {
                     console.err('Problem with events.FETCH_NEXT_REMINDER: ' + err);
                     return;
                 }
@@ -22,11 +22,11 @@ class BookKeeper {
 
                 // add field 'itemType' to JSON data object
                 if(data.time < now) {
-                    data['itemType'] = 'reminder';
+                    data.itemType = 'reminder';
                     eventBus.emitJiboEvent('INTERRUPT_IDLE', data);
                 }
             });
-        }, interval.fetchReminderInterval);
+        }, config.fetchReminderInterval);
     }
 
 }
