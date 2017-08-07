@@ -93,7 +93,6 @@ class EventBus extends EventEmitter {
     emitEvent (event, params, cb) {
         var self = this;
         self.emit(event, params, cb);
-
     }
 
     /**
