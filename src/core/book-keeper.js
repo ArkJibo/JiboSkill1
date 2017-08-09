@@ -6,10 +6,6 @@ var config = require('../../config/default');
 class BookKeeper {
     constructor (eventBus) {
 
-        eventBus.emitEvent(events.FILL_REMINDER_QUEUE, { }, function () {
-
-        });
-
         setInterval(function () {
             eventBus.emitEvent(events.FETCH_NEXT_REMINDER, {}, function (err, data) {
                 if (err) {
@@ -17,7 +13,7 @@ class BookKeeper {
                     return;
                 } else if (data == null) {
                     return;
-                } 
+                }
 
                 var date = new Date();
                 var now = date.getTime();
