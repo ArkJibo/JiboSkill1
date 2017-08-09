@@ -15,7 +15,9 @@ class BookKeeper {
                 if (err) {
                     console.err('Problem with events.FETCH_NEXT_REMINDER: ' + err);
                     return;
-                }
+                } else if (data == null) {
+                    return;
+                } 
 
                 var date = new Date();
                 var now = date.getTime();
