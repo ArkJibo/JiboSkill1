@@ -11,7 +11,7 @@ class BookKeeper {
                 if (err) {
                     console.err('Problem with events.FETCH_NEXT_REMINDER: ' + err);
                     return;
-                } else if (data == null) {
+                } else if (data === null) {
                     return;
                 }
 
