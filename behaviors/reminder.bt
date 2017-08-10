@@ -33,31 +33,15 @@
         "asset-pack": "core",
         "parent": 1,
         "decorators": [
-            "7acfdcd0-b45d-4979-9ea2-eaa5e106f87a"
+            "2a396e20-1ae5-473c-9732-8cbcf1d3337f"
         ]
-    },
-    "7acfdcd0-b45d-4979-9ea2-eaa5e106f87a": {
-        "id": "7acfdcd0-b45d-4979-9ea2-eaa5e106f87a",
-        "class": "SucceedOnEmbedded",
-        "name": "",
-        "options": {
-            "rule": "hey_jibo",
-            "onResult": [
-                "(listener) => {",
-                "\tlistener.on('hey-jibo', function(asrResult, speakerIds) {",
-                "",
-                "\t});",
-                "}"
-            ]
-        },
-        "asset-pack": "core"
     },
     "c9655f1b-a2af-4646-9323-9361c44c1bc3": {
         "id": "c9655f1b-a2af-4646-9323-9361c44c1bc3",
         "class": "TextToSpeech",
         "name": "Call user",
         "options": {
-            "words": "Hello, are you there?",
+            "words": "Hello, I have a reminder for you!",
             "onWord": [
                 "(word) => {",
                 "}"
@@ -124,7 +108,7 @@
                 "    if (isInArray(firstLetter, vowels)) {",
                 "        response = 'You have an ' + type + ' on ' + date;",
                 "    } else {",
-                "        response = 'You have an ' + type + ' on ' + date;",
+                "        response = 'You have a ' + type + ' on ' + date;",
                 "    }",
                 "    callback(response);",
                 "",
@@ -148,6 +132,7 @@
         "asset-pack": "core",
         "parent": 1,
         "children": [
+            "2c096fb6-9fe6-4748-90aa-060f737e89f0",
             "82ad6b41-25dd-4438-86a5-81e228cecbe8",
             "20cb276b-4b26-4416-978d-89928cfff1dd"
         ]
@@ -202,8 +187,8 @@
         "asset-pack": "core",
         "parent": "20cb276b-4b26-4416-978d-89928cfff1dd",
         "children": [
-            "77f5491a-aab9-44f4-8eda-d7b662021c54",
-            "e668828a-eb77-4ed3-b552-af5330f758d7"
+            "e668828a-eb77-4ed3-b552-af5330f758d7",
+            "77f5491a-aab9-44f4-8eda-d7b662021c54"
         ],
         "decorators": [
             "796abd63-a734-4d21-8b42-55ece6179c15"
@@ -227,7 +212,7 @@
         "class": "TextToSpeech",
         "name": "Reminder confirmed",
         "options": {
-            "words": "Confirmed your reminder. Peace out braaahh!",
+            "words": "Your reminder is confirmed.  Goodbye. ",
             "onWord": [
                 "(word) => {",
                 "}"
@@ -267,9 +252,9 @@
     "045b277f-facf-4748-a97e-b5ca1dc99eb7": {
         "id": "045b277f-facf-4748-a97e-b5ca1dc99eb7",
         "class": "TextToSpeech",
-        "name": "Reminder confirmed",
+        "name": "Reminder not confirmed",
         "options": {
-            "words": "I'll remind you later then!",
+            "words": "I'll remind you later then. Goodbye. ",
             "onWord": [
                 "(word) => {",
                 "}"
@@ -286,12 +271,55 @@
         "options": {
             "exec": [
                 "() => {",
-                "    notepad.getItem('voiceCommand').viewed = true; ",
+                "    var events = require('../src/core/event/event');",
+                "    ",
+                "    ",
                 "    console.log(notepad.getItem('voiceCommand'));",
                 "}"
             ]
         },
         "asset-pack": "core",
         "parent": "075e7044-ab90-434c-8657-6a7be6a38aa5"
+    },
+    "2c096fb6-9fe6-4748-90aa-060f737e89f0": {
+        "id": "2c096fb6-9fe6-4748-90aa-060f737e89f0",
+        "class": "TextToSpeech",
+        "name": "",
+        "options": {
+            "words": "Would you like to confirm this reminder?",
+            "onWord": [
+                "(word) => {",
+                "}"
+            ]
+        },
+        "asset-pack": "core",
+        "parent": "98359d71-d30a-48ed-bd4a-84dc803688f4"
+    },
+    "2a396e20-1ae5-473c-9732-8cbcf1d3337f": {
+        "id": "2a396e20-1ae5-473c-9732-8cbcf1d3337f",
+        "class": "SucceedOnListen",
+        "name": "",
+        "options": {
+            "getOptions": [
+                "() => {",
+                "    let options = {",
+                "        heyJibo: false,",
+                "        detectEnd: false,",
+                "        incremental: false,",
+                "        authenticateSpeaker: ''",
+                "    }",
+                "    return options;",
+                "}"
+            ],
+            "rule": "reminder.rule",
+            "onResult": [
+                "(listener) => {",
+                "    listener.on('cloud', function(asrResult, speakerIds) {",
+                "",
+                "    });",
+                "}"
+            ]
+        },
+        "asset-pack": "core"
     }
 }

@@ -1,3 +1,10 @@
 TopRule = (
-    ok { confirm='pass'} | no { confirm='fail'}
-);
+    no {confirm='fail' } | $remindLater {confirm='fail'} |
+    ok {confirm='pass'} | yes {confirm='pass'} | $yes {confirm='pass'} |
+    sure {confirm='pass'} | yes {confirm='pass'}
+    $acknowledge
+) $*;
+
+acknowledge = $* jibo;
+yes = yes $*;
+remindLater = $* later;
