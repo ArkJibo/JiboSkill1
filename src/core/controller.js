@@ -395,7 +395,7 @@ class Controller {
     _flagReminder (params, cb) {
         var self = this;
 
-        self._model.setReminderViewed(params.id, cb);
+        self._model.setReminderViewed(params._id, cb);
     }
 
     /**

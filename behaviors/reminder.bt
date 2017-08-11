@@ -274,6 +274,7 @@
                 "        if (err) {",
                 "            console.log('Error emit event: ', err);",
                 "        }",
+                "        ",
                 "    });",
                 "    console.log(notepad.getItem('voiceCommand'));",
                 "}"
