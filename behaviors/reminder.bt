@@ -179,11 +179,9 @@
     },
     "075e7044-ab90-434c-8657-6a7be6a38aa5": {
         "id": "075e7044-ab90-434c-8657-6a7be6a38aa5",
-        "class": "Parallel",
+        "class": "Sequence",
         "name": "",
-        "options": {
-            "succeedOnOne": false
-        },
+        "options": {},
         "asset-pack": "core",
         "parent": "20cb276b-4b26-4416-978d-89928cfff1dd",
         "children": [
@@ -272,7 +270,11 @@
             "exec": [
                 "() => {",
                 "    var events = require('../src/core/event/event');",
-                "    ",
+                "    blackboard.eventBus.emitEvent(events.FLAG_REMINDER, {}, function(err, data) {",
+                "        if(err) {",
+                "            console.log('Problem with events.FLAG_REMINDER with error: ' + err);",
+                "        }",
+                "    });",
                 "    ",
                 "    console.log(notepad.getItem('voiceCommand'));",
                 "}"
