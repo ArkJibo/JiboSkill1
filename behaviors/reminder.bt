@@ -270,12 +270,11 @@
             "exec": [
                 "() => {",
                 "    var events = require('../src/core/event/event');",
-                "    blackboard.eventBus.emitEvent(events.FLAG_REMINDER, {}, function(err, data) {",
-                "        if(err) {",
-                "            console.log('Problem with events.FLAG_REMINDER with error: ' + err);",
+                "    blackboard.eventBus.emitEvent(events.FLAG_REMINDER, notepad.getItem('voiceCommand'), function (err, data) {",
+                "        if (err) {",
+                "            console.log('Error emit event: ', err);",
                 "        }",
                 "    });",
-                "    ",
                 "    console.log(notepad.getItem('voiceCommand'));",
                 "}"
             ]
