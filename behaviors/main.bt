@@ -67,12 +67,6 @@
                 "(listener) => {",
                 "\tlistener.on('hey-jibo', function(asrResult, speakerIds) {",
                 "\t\tnotepad.addSwitchCondition('idleSwitch', 'user');",
-                "\t    notepad.addItem({",
-                "\t        name: 'voice-command',",
-                "\t        item: asrResult,",
-                "\t        overwrite: true,",
-                "\t        permanent: false",
-                "\t    });",
                 "\t});",
                 "}"
             ]
@@ -211,10 +205,10 @@
             "rule": "main.rule",
             "onResult": [
                 "(listener) => {",
-                "    listener.on('cloud', function(asrResult, speakerIds) {",
+                "    listener.on('cloud', function (asrResult, speakerIds) {",
                 "        notepad.addItem({",
                 "            name: 'commandListen',",
-                "            item: asrResult.NLParse",
+                "            item: asrResult",
                 "        });",
                 "    });",
                 "}"
@@ -301,7 +295,9 @@
         "options": {
             "conditional": [
                 "() => {",
-                "    return notepad.getSwitchCondition('userCommandSwitch') === 'schedule';",
+                "    let config = require('../config/default');",
+                "    let value = config.useNLP ? 'calendar.getSchedule' : 'schedule';",
+                "    return notepad.getSwitchCondition('userCommandSwitch') === value;",
                 "}"
             ]
         },
@@ -368,11 +364,20 @@
         "options": {
             "exec": [
                 "(succeed, fail) => {",
+                "    var config = require('../config/default');",
                 "    var MainListener = require('../listeners/main');",
                 "    var main = new MainListener(blackboard, notepad);",
-                "    main.process(notepad.getItem('commandListen'), function () {",
+                "    main.process(notepad.getItem('commandListen'), function (err, intent) {",
+                "        if (err) {",
+                "            console.error(err);",
+                "            fail();",
+                "        }",
                 "        //  Set notepad value for switch",
-                "        notepad.addSwitchCondition('userCommandSwitch', notepad.getItem('commandListen').action);",
+                "        if (config.useNLP) {",
+                "            notepad.addSwitchCondition('userCommandSwitch', intent);",
+                "        } else {",
+                "            notepad.addSwitchCondition('userCommandSwitch', notepad.getItem('commandListen').NLParse.action);",
+                "        }",
                 "        succeed();",
                 "    });",
                 "}"

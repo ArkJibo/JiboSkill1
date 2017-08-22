@@ -2,14 +2,15 @@
 
 var jibo = require('jibo');
 var Status = jibo.bt.Status;
+var _ = require('lodash');
+var async = require('async');
 var EventBus = require('./core/event/event-bus');
 var Controller = require('./core/controller');
 var Notepad = require('./notepad');
 var testEvents = require('../test/test-events');
 var events = require('./core/event/event');
 var util = require('./util');
-var _ = require('lodash');
-var async = require('async');
+var config = require('../config/default');
 
 jibo.init('face', function (err) {
     if (err) {
@@ -42,6 +43,7 @@ jibo.init('face', function (err) {
                 //  Add to blackboard, global var across all behaviors
                 root.blackboard.eventBus = eventBus;
                 root.blackboard.controller = controller;
+                root.blackboard.config = config;
 
                 // Listen for the jibo main update loop
                 root.start();

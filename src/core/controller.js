@@ -357,14 +357,14 @@ class Controller {
      */
     _askJeeves (params, cb) {
         request.post({
-            url: util.apiAi.url,
+            url: config.apiAi.url,
             body: JSON.stringify({
                 query: params.text,
                 lang: 'en',
                 sessionId: 'garbageFire'
             }),
             headers: {
-                'Authorization': 'Bearer ' + util.apiAi.accessToken,
+                'Authorization': 'Bearer ' + config.apiAi.accessToken,
                 'Content-Type': 'application/json'
             }
         }, function (err, res, body) {

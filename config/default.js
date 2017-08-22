@@ -1,6 +1,7 @@
 'use strict';
 
 module.exports = {
+    useNLP: false,
     model: {
         db: {
             events: './db/events.db',
@@ -27,6 +28,9 @@ module.exports = {
             emails: './db/test-emails.db'
         }
     },
-
+    apiAi: {
+        accessToken: '1e1cdd7dc96e4fa6bc4acafff21901fc',
+        url: 'https://api.api.ai/v1/query'
+    },
     fetchReminderInterval: 1000
-}
+};
