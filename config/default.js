@@ -26,5 +26,7 @@ module.exports = {
             credentials: './db/test-credentials.db',
             emails: './db/test-emails.db'
         }
-    }
+    },
+
+    fetchReminderInterval: 1000
 }

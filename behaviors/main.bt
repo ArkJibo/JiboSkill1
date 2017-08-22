@@ -25,7 +25,7 @@
             "behaviorPath": "idle.bt",
             "getNotepad": [
                 "() => {",
-                "    return {};",
+                "    return notepad;",
                 "}"
             ],
             "onResult": [
@@ -51,7 +51,7 @@
             ],
             "conditional": [
                 "() => {",
-                "    return true;",
+                "    return false;",
                 "}"
             ]
         },
@@ -336,7 +336,7 @@
         "options": {
             "conditional": [
                 "() => {",
-                "    return notepad.getItem('voiceCommand').type === 'reminder';",
+                "    return notepad.getItem('voiceCommand').itemType === 'reminder';",
                 "}"
             ]
         },

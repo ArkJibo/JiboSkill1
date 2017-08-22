@@ -8,7 +8,7 @@
     "rules": {
         "indent":                       ["error", 4, {"SwitchCase": 1}],
         "curly":                        ["error", "all"],
-        "linebreak-style":              ["error", "windows"],
+        "linebreak-style":              ["error", "unix"],
         "quotes":                       ["error", "single"],
         "semi":                         ["error", "always"],
         "no-multi-spaces":              ["error"],

@@ -5,18 +5,43 @@
         "name": "",
         "options": {},
         "children": [
-            "dd9a0f05-49d4-4b54-887a-3d172500e15c"
+            "c9655f1b-a2af-4646-9323-9361c44c1bc3",
+            "c0f24542-6d4e-4720-843f-8a007ffc50ac",
+            "e3245d69-af5f-41a8-b02e-fb1b286ad009",
+            "98359d71-d30a-48ed-bd4a-84dc803688f4"
         ]
     },
     "meta": {
         "version": 1
     },
-    "dd9a0f05-49d4-4b54-887a-3d172500e15c": {
-        "id": "dd9a0f05-49d4-4b54-887a-3d172500e15c",
-        "class": "TextToSpeech",
-        "name": "",
+    "c0f24542-6d4e-4720-843f-8a007ffc50ac": {
+        "id": "c0f24542-6d4e-4720-843f-8a007ffc50ac",
+        "class": "Subtree",
+        "name": "User respond to notification",
         "options": {
-            "words": "Doing cool reminder stuff!",
+            "behaviorPath": "idle.bt",
+            "getNotepad": [
+                "() => {",
+                "    return {};",
+                "}"
+            ],
+            "onResult": [
+                "(treeResult) => {",
+                "}"
+            ]
+        },
+        "asset-pack": "core",
+        "parent": 1,
+        "decorators": [
+            "2a396e20-1ae5-473c-9732-8cbcf1d3337f"
+        ]
+    },
+    "c9655f1b-a2af-4646-9323-9361c44c1bc3": {
+        "id": "c9655f1b-a2af-4646-9323-9361c44c1bc3",
+        "class": "TextToSpeech",
+        "name": "Call user",
+        "options": {
+            "words": "Hello, I have a reminder for you!",
             "onWord": [
                 "(word) => {",
                 "}"
@@ -24,5 +49,279 @@
         },
         "asset-pack": "core",
         "parent": 1
+    },
+    "e3245d69-af5f-41a8-b02e-fb1b286ad009": {
+        "id": "e3245d69-af5f-41a8-b02e-fb1b286ad009",
+        "class": "Parallel",
+        "name": "",
+        "options": {
+            "succeedOnOne": false
+        },
+        "asset-pack": "core",
+        "parent": 1,
+        "children": [
+            "601d2ea7-9895-4df6-ad88-ab94ee9d953a",
+            "5fda2cd5-fd39-4b79-8747-dfe39c0e8287"
+        ]
+    },
+    "5fda2cd5-fd39-4b79-8747-dfe39c0e8287": {
+        "id": "5fda2cd5-fd39-4b79-8747-dfe39c0e8287",
+        "class": "PlayAudio",
+        "name": "",
+        "options": {
+            "audioPath": "FX_Whistle.mp3"
+        },
+        "asset-pack": "core",
+        "parent": "e3245d69-af5f-41a8-b02e-fb1b286ad009"
+    },
+    "601d2ea7-9895-4df6-ad88-ab94ee9d953a": {
+        "id": "601d2ea7-9895-4df6-ad88-ab94ee9d953a",
+        "class": "TextToSpeechJs",
+        "name": "",
+        "options": {
+            "getWords": [
+                "(callback) => {",
+                "    var type = notepad.getItem('voiceCommand').type.toString();",
+                "    var time = notepad.getItem('voiceCommand').time;",
+                "    ",
+                "    function dateConv(date) {",
+                "        var months = ['January', 'February', 'March', 'April', 'May', 'June',",
+                "                'July', 'August', 'September', 'October', 'November', 'December'];",
+                "                ",
+                "        var hours = ((date.getUTCHours() + 11) % 12 + 1);",
+                "        var suffix = date.getUTCHours() < 12 ? 'AM':'PM';         ",
+                "",
+                "        return months[date.getUTCMonth()] + ' ' + date.getUTCDate() + ', ' + date.getUTCFullYear() + ' at ' + hours + ':' + ('0' + date.getUTCMinutes()).slice(-2) + suffix;",
+                "    }",
+                "    ",
+                "    var date = dateConv(new Date(+time));",
+                "",
+                "    function isInArray(value, array) {",
+                "        return array.indexOf(value) > -1;",
+                "    }",
+                "",
+                "  ",
+                "    // Jibo speech for a vs an based on 1st character vowel",
+                "    var vowels = ['a', 'e', 'i', 'o', 'u'];",
+                "    var firstLetter = type.slice(0,1);",
+                "    var response = '';",
+                "    if (isInArray(firstLetter, vowels)) {",
+                "        response = 'You have an ' + type + ' on ' + date;",
+                "    } else {",
+                "        response = 'You have a ' + type + ' on ' + date;",
+                "    }",
+                "    callback(response);",
+                "",
+                "    ",
+                "    ",
+                "}"
+            ],
+            "onWord": [
+                "(word) => {",
+                "}"
+            ]
+        },
+        "asset-pack": "core",
+        "parent": "e3245d69-af5f-41a8-b02e-fb1b286ad009"
+    },
+    "98359d71-d30a-48ed-bd4a-84dc803688f4": {
+        "id": "98359d71-d30a-48ed-bd4a-84dc803688f4",
+        "class": "Sequence",
+        "name": "",
+        "options": {},
+        "asset-pack": "core",
+        "parent": 1,
+        "children": [
+            "2c096fb6-9fe6-4748-90aa-060f737e89f0",
+            "82ad6b41-25dd-4438-86a5-81e228cecbe8",
+            "20cb276b-4b26-4416-978d-89928cfff1dd"
+        ]
+    },
+    "82ad6b41-25dd-4438-86a5-81e228cecbe8": {
+        "id": "82ad6b41-25dd-4438-86a5-81e228cecbe8",
+        "class": "Listen",
+        "name": "Listen for confirmation",
+        "options": {
+            "getOptions": [
+                "() => {",
+                "    let options = {",
+                "        heyJibo: false,",
+                "        detectEnd: false,",
+                "        incremental: false,",
+                "        authenticateSpeaker: ''",
+                "    }",
+                "    return options;",
+                "}"
+            ],
+            "rule": "reminder.rule",
+            "onResult": [
+                "(listener) => {",
+                "    listener.on('cloud', function(asrResult, speakerIds) {",
+                "      notepad.NLresult = asrResult.NLParse.confirm;",
+                "    });",
+                "}"
+            ]
+        },
+        "asset-pack": "core",
+        "parent": "98359d71-d30a-48ed-bd4a-84dc803688f4"
+    },
+    "20cb276b-4b26-4416-978d-89928cfff1dd": {
+        "id": "20cb276b-4b26-4416-978d-89928cfff1dd",
+        "class": "Switch",
+        "name": "",
+        "options": {},
+        "asset-pack": "core",
+        "parent": "98359d71-d30a-48ed-bd4a-84dc803688f4",
+        "children": [
+            "075e7044-ab90-434c-8657-6a7be6a38aa5",
+            "4ebb5546-f574-4772-b720-4701229e87e1"
+        ]
+    },
+    "075e7044-ab90-434c-8657-6a7be6a38aa5": {
+        "id": "075e7044-ab90-434c-8657-6a7be6a38aa5",
+        "class": "Sequence",
+        "name": "",
+        "options": {},
+        "asset-pack": "core",
+        "parent": "20cb276b-4b26-4416-978d-89928cfff1dd",
+        "children": [
+            "e668828a-eb77-4ed3-b552-af5330f758d7",
+            "77f5491a-aab9-44f4-8eda-d7b662021c54"
+        ],
+        "decorators": [
+            "796abd63-a734-4d21-8b42-55ece6179c15"
+        ]
+    },
+    "796abd63-a734-4d21-8b42-55ece6179c15": {
+        "id": "796abd63-a734-4d21-8b42-55ece6179c15",
+        "class": "Case",
+        "name": "",
+        "options": {
+            "conditional": [
+                "() => {",
+                "    return notepad.NLresult == 'pass';",
+                "}"
+            ]
+        },
+        "asset-pack": "core"
+    },
+    "77f5491a-aab9-44f4-8eda-d7b662021c54": {
+        "id": "77f5491a-aab9-44f4-8eda-d7b662021c54",
+        "class": "TextToSpeech",
+        "name": "Reminder confirmed",
+        "options": {
+            "words": "Your reminder is confirmed.  Goodbye. ",
+            "onWord": [
+                "(word) => {",
+                "}"
+            ]
+        },
+        "asset-pack": "core",
+        "parent": "075e7044-ab90-434c-8657-6a7be6a38aa5",
+        "decorators": []
+    },
+    "75c8e84f-66c6-4efe-ae01-d8295b9b973d": {
+        "id": "75c8e84f-66c6-4efe-ae01-d8295b9b973d",
+        "class": "Case",
+        "name": "",
+        "options": {
+            "conditional": [
+                "() => {",
+                "    return notepad.NLresult == 'fail';",
+                "}"
+            ]
+        },
+        "asset-pack": "core"
+    },
+    "4ebb5546-f574-4772-b720-4701229e87e1": {
+        "id": "4ebb5546-f574-4772-b720-4701229e87e1",
+        "class": "Sequence",
+        "name": "",
+        "options": {},
+        "asset-pack": "core",
+        "parent": "20cb276b-4b26-4416-978d-89928cfff1dd",
+        "decorators": [
+            "75c8e84f-66c6-4efe-ae01-d8295b9b973d"
+        ],
+        "children": [
+            "045b277f-facf-4748-a97e-b5ca1dc99eb7"
+        ]
+    },
+    "045b277f-facf-4748-a97e-b5ca1dc99eb7": {
+        "id": "045b277f-facf-4748-a97e-b5ca1dc99eb7",
+        "class": "TextToSpeech",
+        "name": "Reminder not confirmed",
+        "options": {
+            "words": "I'll remind you later then. Goodbye. ",
+            "onWord": [
+                "(word) => {",
+                "}"
+            ]
+        },
+        "asset-pack": "core",
+        "parent": "4ebb5546-f574-4772-b720-4701229e87e1",
+        "decorators": []
+    },
+    "e668828a-eb77-4ed3-b552-af5330f758d7": {
+        "id": "e668828a-eb77-4ed3-b552-af5330f758d7",
+        "class": "ExecuteScript",
+        "name": "",
+        "options": {
+            "exec": [
+                "() => {",
+                "    var events = require('../src/core/event/event');",
+                "    blackboard.eventBus.emitEvent(events.FLAG_REMINDER, notepad.getItem('voiceCommand'), function (err, data) {",
+                "        if (err) {",
+                "            console.log('Error emit event: ', err);",
+                "        }",
+                "        ",
+                "    });",
+                "    console.log(notepad.getItem('voiceCommand'));",
+                "}"
+            ]
+        },
+        "asset-pack": "core",
+        "parent": "075e7044-ab90-434c-8657-6a7be6a38aa5"
+    },
+    "2c096fb6-9fe6-4748-90aa-060f737e89f0": {
+        "id": "2c096fb6-9fe6-4748-90aa-060f737e89f0",
+        "class": "TextToSpeech",
+        "name": "",
+        "options": {
+            "words": "Would you like to confirm this reminder?",
+            "onWord": [
+                "(word) => {",
+                "}"
+            ]
+        },
+        "asset-pack": "core",
+        "parent": "98359d71-d30a-48ed-bd4a-84dc803688f4"
+    },
+    "2a396e20-1ae5-473c-9732-8cbcf1d3337f": {
+        "id": "2a396e20-1ae5-473c-9732-8cbcf1d3337f",
+        "class": "SucceedOnListen",
+        "name": "",
+        "options": {
+            "getOptions": [
+                "() => {",
+                "    let options = {",
+                "        heyJibo: false,",
+                "        detectEnd: false,",
+                "        incremental: false,",
+                "        authenticateSpeaker: ''",
+                "    }",
+                "    return options;",
+                "}"
+            ],
+            "rule": "reminder.rule",
+            "onResult": [
+                "(listener) => {",
+                "    listener.on('cloud', function(asrResult, speakerIds) {",
+                "",
+                "    });",
+                "}"
+            ]
+        },
+        "asset-pack": "core"
     }
 }

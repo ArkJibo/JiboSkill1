@@ -201,7 +201,7 @@ class EmailClient {
             self._transporter = transporter;
             // send mail with defined transport object
             self._transporter.sendMail(mailOptions, function (error) {
-                if(error) {
+                if (error) {
                     return;
                 }
                 self._SendCheck.resolve(true);
@@ -233,7 +233,7 @@ class EmailClient {
                             var f = self._imap.fetch(results, {
                                 bodies: [''],
 
-                                markSeen: true 
+                                markSeen: true
 
                             });
 
