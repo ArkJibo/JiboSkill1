@@ -20,10 +20,6 @@ class Controller {
         var self = this;
 
         self._eventBus = eventBus;
-        self._model = new Model(config.model.db);
-        self._emailClient = new EmailClient('BIG FAKE NAME', eventBus);
-        self._bookkeeper = new BookKeeper();
-
         //  Register event listeners
         self._eventBus.addEventListener(events.RECEIVED_EMAIL, self, self._receivedEmail);
         self._eventBus.addEventListener(events.FETCH_SCHEDULE, self, self._fetchSchedule);
@@ -37,6 +33,12 @@ class Controller {
         self._eventBus.addEventListener(events.DATABASE_UPDATE, self, self._updateDatabase);
         self._eventBus.addEventListener(events.DATABASE_ADD, self, self._addToDatabase);
         self._eventBus.addEventListener(events.DATABASE_REMOVE, self, self._removeFromDatabase);
+
+        self._model = new Model(config.model.db);
+        self._emailClient = new EmailClient('BIG FAKE NAME', eventBus);
+        self._bookkeeper = new BookKeeper(eventBus);
+
+
     }
 
     /**
@@ -393,7 +395,7 @@ class Controller {
     _flagReminder (params, cb) {
         var self = this;
 
-        self._model.setReminderViewed(params.id, cb);
+        self._model.setReminderViewed(params._id, cb);
     }
 
     /**
